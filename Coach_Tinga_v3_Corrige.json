@@ -1,9 +1,8 @@
 {
   "name": "Coach Tinga — v3 Corrigé",
   "_review_notes": [
-    "SÉCURITÉ : remplacer les clés Supabase hardcodées par des variables d'environnement n8n.",
-    "Configurer dans n8n Settings > Environment Variables :",
-    "  SUPABASE_KEY  = votre clé service_role Supabase (à régénérer)",
+    "Variables d'environnement à configurer dans n8n Settings > Environment Variables :",
+    "  SUPABASE_KEY       = clé service_role Supabase (à régénérer si exposée)",
     "  EVOLUTION_API_URL  = URL de base de votre instance Evolution API",
     "  EVOLUTION_API_KEY  = clé API Evolution",
     "  EVOLUTION_INSTANCE = nom de l'instance Evolution WhatsApp"
@@ -21,10 +20,7 @@
       "webhookId": "03142647-496d-4fa9-be0e-fda7981d7b88",
       "typeVersion": 1.2,
       "credentials": {
-        "telegramApi": {
-          "id": "n0l8mGZ02zoFtrht",
-          "name": "Coach Tinga"
-        }
+        "telegramApi": { "id": "n0l8mGZ02zoFtrht", "name": "Coach Tinga" }
       }
     },
     {
@@ -42,7 +38,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst input = $input.first().json;\nlet user_id, message, channel, phone_or_chat_id;\nif (input.data && input.data.body !== undefined) {\n  const from = input.data.from || '';\n  user_id = 'wa_' + from.replace('@s.whatsapp.net','').replace('@c.us','');\n  message = (input.data.body || '').trim();\n  channel = 'whatsapp';\n  phone_or_chat_id = from;\n} else if (input.message) {\n  user_id = 'tg_' + String(input.message.from.id);\n  message = (input.message.text || '').trim();\n  channel = 'telegram';\n  phone_or_chat_id = String(input.message.chat.id);\n} else {\n  // Canal inconnu — on laisse passer avec marqueur pour ignorer en aval\n  user_id = 'unknown_' + Date.now();\n  message = '';\n  channel = 'unknown';\n  phone_or_chat_id = '';\n}\nif (channel === 'unknown') return [];\nreturn [{ json: { user_id, message, channel, phone_or_chat_id, timestamp: new Date().toISOString() } }];\n"
+        "jsCode": "\nconst input = $input.first().json;\nlet user_id, message, channel, phone_or_chat_id;\nif (input.data && input.data.body !== undefined) {\n  const from = input.data.from || '';\n  user_id = 'wa_' + from.replace('@s.whatsapp.net','').replace('@c.us','');\n  message = (input.data.body || '').trim();\n  channel = 'whatsapp';\n  phone_or_chat_id = from;\n} else if (input.message) {\n  user_id = 'tg_' + String(input.message.from.id);\n  message = (input.message.text || '').trim();\n  channel = 'telegram';\n  phone_or_chat_id = String(input.message.chat.id);\n} else {\n  return [];\n}\nreturn [{ json: { user_id, message, channel, phone_or_chat_id, timestamp: new Date().toISOString() } }];\n"
       },
       "id": "331a32c2-a9b7-434a-9e8a-6144c0860b83",
       "name": "Normalize Input",
@@ -62,9 +58,7 @@
           ]
         },
         "options": {
-          "response": {
-            "response": { "responseFormat": "json" }
-          }
+          "response": { "response": { "responseFormat": "json" } }
         }
       },
       "id": "53f5a959-7a6b-4d0f-b437-820c242d4ce2",
@@ -86,7 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst profil = $input.first().json;\nconst normalized = $('Normalize Input').first().json;\nconst message = (normalized.message || '').trim();\nconst channel = normalized.channel;\nconst phone_or_chat_id = normalized.phone_or_chat_id;\nconst user_id = normalized.user_id;\n\n// Sanitise le contenu utilisateur avant injection dans les prompts LLM\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst extractPrenom = (msg) => {\n  const patterns = [\n    /je\\s+(?:m['\\u2019]appelle|me\\s+pr[e\\u00e9]nomme|suis)\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)/i,\n    /mon\\s+pr[e\\u00e9]nom\\s+(?:est|c['\\u2019]est)\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)/i,\n    /(?:^|\\s)c['\\u2019]est\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)$/i,\n    /^([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)$/\n  ];\n  for (const p of patterns) {\n    const m = msg.match(p);\n    if (m && m[1].length > 1) return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();\n  }\n  // Ne devine le prénom QUE si le message est un seul mot\n  const words = msg.trim().split(/\\s+/);\n  if (words.length === 1) {\n    const w = words[0].replace(/[^A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]/gi, '');\n    if (w.length > 1) return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();\n  }\n  return '';\n};\n\nconst MSG = {\n  \"0\": \"\\ud83c\\udf3f Bonjour,\\n\\nJe suis *Tinga*, ton coach IA de d\\u00e9veloppement personnel.\\n\\nJe suis une intelligence artificielle \\u2014 je pr\\u00e9f\\u00e8re te le dire clairement d\\u00e8s le d\\u00e9part. Mais je ne suis pas n'importe quel outil.\\n\\nJe suis construit sur les travaux d'Elijah Parfait ONDO OYONO, coach praticien-chercheur et consultant bas\\u00e9 \\u00e0 Libreville, auteur de \\\"Le coaching \\u00e0 l'africaine \\u2014 entre syst\\u00e8mes symboliques et d\\u00e9veloppement social.\\\"\\n\\nCe livre est le fruit d'ann\\u00e9es d'observation et de pratique du coaching en Afrique francophone. Il pose une question essentielle : comment accompagner quelqu'un s\\u00e9rieusement, en tenant compte de qui il est vraiment \\u2014 de ses r\\u00e9alit\\u00e9s, de sa culture, de ses liens ?\\n\\nC'est sur cette base que je travaille. Pas des formules import\\u00e9es. Pas des promesses vides. Une m\\u00e9thode ancr\\u00e9e dans notre r\\u00e9alit\\u00e9.\\n\\nCe que je fais : t'aider \\u00e0 voir plus clair, \\u00e0 d\\u00e9finir ce que tu veux vraiment, et \\u00e0 avancer pas \\u00e0 pas.\\n\\nCe que je ne fais pas : te donner des formules magiques, pr\\u00e9tendre tout r\\u00e9soudre, ou me substituer \\u00e0 un professionnel de sant\\u00e9 si tu en as besoin.\\n\\nTout ce que tu partages ici reste entre nous.\\n\\nOn commence ? Dis-moi ton pr\\u00e9nom. \\ud83d\\udc4b\",\n  \"0_retry\": \"Je n'ai pas bien saisi ton pr\\u00e9nom. Peux-tu me le dire simplement \\u2014 juste ton pr\\u00e9nom ? \\ud83d\\ude0a\",\n  \"1\": \"{PRENOM}, bienvenue.\\n\\nAvant qu'on commence, je veux qu'on soit honn\\u00eates l'un envers l'autre.\\n\\nJe suis un coach IA \\u2014 pas un m\\u00e9decin, pas un th\\u00e9rapeute. Il y a des situations que je peux t'accompagner \\u00e0 traverser, et d'autres qui n\\u00e9cessitent un autre type de soutien.\\n\\nPour qu'on parte du bon pied : dis-moi comment tu vas en ce moment \\u2014 vraiment. Pas la version polie. Ce qui se passe pour toi.\",\n  \"2\": \"Je t'entends, {PRENOM}.\\n\\nPeux-tu m'en dire un peu plus ? Qu'est-ce qui se passe concr\\u00e8tement dans ta vie en ce moment ?\",\n  \"3\": \"Pour t'accompagner avec justesse, j'ai besoin de comprendre ton contexte \\u2014 pas pour te juger, pour te voir tel(le) que tu es.\\n\\nDis-moi : qu'est-ce que tu fais dans la vie en ce moment ?\\nTon activit\\u00e9, ton travail, ta situation \\u2014 comme tu veux le d\\u00e9crire.\",\n  \"4\": \"{PRENOM}, maintenant dis-moi \\u2014 et prends le temps qu'il faut :\\n\\nQu'est-ce qui t'a amen\\u00e9(e) ici aujourd'hui ?\\n\\nPas la version courte. La vraie. Ce que tu portes, ce qui te manque, ce que tu veux atteindre ou ce qui te bloque.\\n\\nJe t'\\u00e9coute.\",\n  \"5\": \"Ce que tu partages est important, {PRENOM}.\\n\\nUne question que peu de coachs posent \\u2014 mais que je consid\\u00e8re essentielle :\\n\\nCe que tu veux changer ou construire, est-ce que \\u00e7a te concerne uniquement toi ? Ou est-ce qu'il y a des personnes autour de toi \\u2014 famille, proches, communaut\\u00e9 \\u2014 qui sont touch\\u00e9es par ce changement, d'une mani\\u00e8re ou d'une autre ?\\n\\nDans notre r\\u00e9alit\\u00e9, on n'avance jamais vraiment seul(e). Un coaching qui ignore \\u00e7a ne va pas loin.\",\n  \"6\": \"Est-ce que tu as d\\u00e9j\\u00e0 essay\\u00e9 de changer cette situation ou d'avancer vers cet objectif ?\\n\\nSi oui \\u2014 qu'est-ce que tu as tent\\u00e9 ? Et pourquoi \\u00e7a n'a pas suffi, selon toi ?\\n\\nSi non \\u2014 qu'est-ce qui t'a retenu jusqu'ici ?\",\n  \"7\": \"Derni\\u00e8re question avant qu'on construise ton programme.\\n\\nImagine que dans quelques mois, tu regardes en arri\\u00e8re et tu te dis : \\\"ce coaching a vraiment chang\\u00e9 quelque chose.\\\"\\n\\nQu'est-ce qui a chang\\u00e9 ? Dans ta vie, ton quotidien, tes relations \\u2014 pas juste dans ta t\\u00eate.\\n\\nD\\u00e9cris-moi \\u00e7a. M\\u00eame si c'est flou. Surtout si c'est flou.\"\n};\nconst fmt = (key, prenom) => (MSG[key] || '').replace(/\\{PRENOM\\}/g, prenom || '');\n\n// Utilisateur d\\u00e9j\\u00e0 orient\\u00e9 vers un professionnel\nif (profil.coaching_phase === 'ORIENTE') {\n  return [{ json: {\n    user_id, channel, phone_or_chat_id,\n    onboarding_step: profil.onboarding_step || 1,\n    coaching_phase: 'ORIENTE',\n    prenom: profil.prenom || '',\n    response: `Tinga est toujours l\\u00e0 quand tu te sens pr\\u00eat(e)${profil.prenom ? ', ' + profil.prenom : ''}. \\ud83c\\udf3f`,\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\nconst step = Number(profil.onboarding_step) || 0;\nconst prenom = profil.prenom || '';\n\n// Nouvel utilisateur\nif (profil.not_found) {\n  return [{ json: {\n    user_id, channel, phone_or_chat_id,\n    onboarding_step: 0, coaching_phase: 'ONBOARDING',\n    is_new: true, response: MSG['0'],\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 0 \\u2192 r\\u00e9cup\\u00e8re le pr\\u00e9nom\nif (step === 0) {\n  const nom = extractPrenom(message);\n  if (!nom) {\n    return [{ json: {\n      ...profil, user_id, channel, phone_or_chat_id,\n      onboarding_step: 0,\n      response: MSG['0_retry'],\n      needs_triage: false, needs_llm: false\n    }}];\n  }\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 1, prenom: nom,\n    response: fmt('1', nom),\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 1 \\u2192 comment tu vas\nif (step === 1) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 2, etat_initial: sanitize(message),\n    response: fmt('2', prenom),\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 2 \\u2192 contexte concret \\u2192 TRIAGE LLM\nif (step === 2) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 3, situation_initiale: sanitize(message),\n    response: null,\n    needs_triage: true, needs_llm: false\n  }}];\n}\n\n// Step 3 \\u2192 apr\\u00e8s triage OK \\u2192 situation professionnelle\nif (step === 3) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 4, response: MSG['3'],\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 4 \\u2192 situation re\\u00e7ue \\u2192 vrai sujet\nif (step === 4) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 5, situation: sanitize(message),\n    response: fmt('4', prenom),\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 5 \\u2192 vrai sujet \\u2192 \\u00e9cosyst\\u00e8me\nif (step === 5) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 6, defi_exprime: sanitize(message),\n    response: fmt('5', prenom),\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 6 \\u2192 \\u00e9cosyst\\u00e8me \\u2192 tentatives\nif (step === 6) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 7, ecosysteme: sanitize(message),\n    response: MSG['6'],\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 7 \\u2192 tentatives \\u2192 vision r\\u00e9ussite\nif (step === 7) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 8, deja_essaye: sanitize(message),\n    response: MSG['7'],\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 8 \\u2192 vision re\\u00e7ue \\u2192 SYNTH\\u00c8SE LLM\nif (step === 8) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 9, vision_reussite: sanitize(message),\n    response: null,\n    needs_triage: false, needs_llm: true\n  }}];\n}\n\n// Step 9 \\u2192 validation programme\nif (step === 9) {\n  const msgLow = message.toLowerCase();\n  const motsCles = [\n    'oui','ok','d\\'accord','parfait','convient','valid\\u00e9','ok\\u00e9','\\u00e7a me va','c\\'est bon',\n    'super','g\\u00e9nial','yes','allons-y','go','top','bien','bonne id\\u00e9e','j\\'accepte',\n    'je valide','on y va','nickel','let\\'s go','c\\'est parfait','\\u00e7a convient','correct'\n  ];\n  const valide = motsCles.some(k => msgLow.includes(k));\n  if (valide) {\n    return [{ json: {\n      ...profil, user_id, channel, phone_or_chat_id,\n      onboarding_step: 10, coaching_phase: 'PROGRAMME_VALIDE',\n      response: `Parfait, ${prenom} ! Ton programme est lanc\\u00e9. \\ud83c\\udf3f\\n\\nOn commence d\\u00e8s maintenant. Je reviens vers toi avec la premi\\u00e8re s\\u00e9ance.`,\n      needs_triage: false, needs_llm: false\n    }}];\n  }\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 9,\n    response: `Je t'entends, ${prenom}. Dis-moi ce que tu voudrais ajuster \\u2014 je l'adapte.`,\n    needs_triage: false, needs_llm: false\n  }}];\n}\n\n// Step 10+ coaching actif\nreturn [{ json: {\n  ...profil, user_id, channel, phone_or_chat_id,\n  onboarding_step: step,\n  coaching_phase: profil.coaching_phase || 'PROGRAMME_VALIDE',\n  response: null, is_coaching_active: true,\n  needs_triage: false, needs_llm: false\n}}];\n"
+        "jsCode": "\nconst profil = $input.first().json;\nconst normalized = $('Normalize Input').first().json;\nconst message = (normalized.message || '').trim();\nconst channel = normalized.channel;\nconst phone_or_chat_id = normalized.phone_or_chat_id;\nconst user_id = normalized.user_id;\n\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst extractPrenom = (msg) => {\n  const patterns = [\n    /je\\s+(?:m['\\u2019]appelle|me\\s+pr[e\\u00e9]nomme|suis)\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)/i,\n    /mon\\s+pr[e\\u00e9]nom\\s+(?:est|c['\\u2019]est)\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)/i,\n    /(?:^|\\s)c['\\u2019]est\\s+([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)$/i,\n    /^([A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]+)$/\n  ];\n  for (const p of patterns) {\n    const m = msg.match(p);\n    if (m && m[1].length > 1) return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();\n  }\n  const words = msg.trim().split(/\\s+/);\n  if (words.length === 1) {\n    const w = words[0].replace(/[^A-Z\\u00c0-\\u0178a-z\\u00e0-\\u00ff\\-]/gi, '');\n    if (w.length > 1) return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();\n  }\n  return '';\n};\n\nconst MSG = {\n  \"0\": \"\\ud83c\\udf3f Bonjour,\\n\\nJe suis *Tinga*, ton coach IA de d\\u00e9veloppement personnel.\\n\\nJe suis une intelligence artificielle \\u2014 je pr\\u00e9f\\u00e8re te le dire clairement d\\u00e8s le d\\u00e9part. Mais je ne suis pas n'importe quel outil.\\n\\nJe suis construit sur les travaux d'Elijah Parfait ONDO OYONO, coach praticien-chercheur et consultant bas\\u00e9 \\u00e0 Libreville, auteur de \\\"Le coaching \\u00e0 l'africaine \\u2014 entre syst\\u00e8mes symboliques et d\\u00e9veloppement social.\\\"\\n\\nC'est sur cette base que je travaille. Pas des formules import\\u00e9es. Pas des promesses vides. Une m\\u00e9thode ancr\\u00e9e dans notre r\\u00e9alit\\u00e9.\\n\\nCe que je fais : t'aider \\u00e0 voir plus clair, \\u00e0 d\\u00e9finir ce que tu veux vraiment, et \\u00e0 avancer pas \\u00e0 pas.\\n\\nCe que je ne fais pas : te donner des formules magiques, pr\\u00e9tendre tout r\\u00e9soudre, ou me substituer \\u00e0 un professionnel de sant\\u00e9 si tu en as besoin.\\n\\nTout ce que tu partages ici reste entre nous.\\n\\nOn commence ? Dis-moi ton pr\\u00e9nom. \\ud83d\\udc4b\",\n  \"0_retry\": \"Je n'ai pas bien saisi ton pr\\u00e9nom. Peux-tu me le dire simplement \\u2014 juste ton pr\\u00e9nom ? \\ud83d\\ude0a\",\n  \"1\": \"{PRENOM}, bienvenue.\\n\\nAvant qu'on commence, je veux qu'on soit honn\\u00eates l'un envers l'autre.\\n\\nJe suis un coach IA \\u2014 pas un m\\u00e9decin, pas un th\\u00e9rapeute. Il y a des situations que je peux t'accompagner \\u00e0 traverser, et d'autres qui n\\u00e9cessitent un autre type de soutien.\\n\\nPour qu'on parte du bon pied : dis-moi comment tu vas en ce moment \\u2014 vraiment. Pas la version polie. Ce qui se passe pour toi.\",\n  \"2\": \"Je t'entends, {PRENOM}.\\n\\nPeux-tu m'en dire un peu plus ? Qu'est-ce qui se passe concr\\u00e8tement dans ta vie en ce moment ?\",\n  \"3\": \"Pour t'accompagner avec justesse, j'ai besoin de comprendre ton contexte \\u2014 pas pour te juger, pour te voir tel(le) que tu es.\\n\\nDis-moi : qu'est-ce que tu fais dans la vie en ce moment ?\\nTon activit\\u00e9, ton travail, ta situation \\u2014 comme tu veux le d\\u00e9crire.\",\n  \"4\": \"{PRENOM}, maintenant dis-moi \\u2014 et prends le temps qu'il faut :\\n\\nQu'est-ce qui t'a amen\\u00e9(e) ici aujourd'hui ?\\n\\nPas la version courte. La vraie. Ce que tu portes, ce qui te manque, ce que tu veux atteindre ou ce qui te bloque.\\n\\nJe t'\\u00e9coute.\",\n  \"5\": \"Ce que tu partages est important, {PRENOM}.\\n\\nUne question que peu de coachs posent \\u2014 mais que je consid\\u00e8re essentielle :\\n\\nCe que tu veux changer ou construire, est-ce que \\u00e7a te concerne uniquement toi ? Ou est-ce qu'il y a des personnes autour de toi \\u2014 famille, proches, communaut\\u00e9 \\u2014 qui sont touch\\u00e9es par ce changement, d'une mani\\u00e8re ou d'une autre ?\\n\\nDans notre r\\u00e9alit\\u00e9, on n'avance jamais vraiment seul(e). Un coaching qui ignore \\u00e7a ne va pas loin.\",\n  \"6\": \"Est-ce que tu as d\\u00e9j\\u00e0 essay\\u00e9 de changer cette situation ou d'avancer vers cet objectif ?\\n\\nSi oui \\u2014 qu'est-ce que tu as tent\\u00e9 ? Et pourquoi \\u00e7a n'a pas suffi, selon toi ?\\n\\nSi non \\u2014 qu'est-ce qui t'a retenu jusqu'ici ?\",\n  \"7\": \"Derni\\u00e8re question avant qu'on construise ton programme.\\n\\nImagine que dans quelques mois, tu regardes en arri\\u00e8re et tu te dis : \\\"ce coaching a vraiment chang\\u00e9 quelque chose.\\\"\\n\\nQu'est-ce qui a chang\\u00e9 ? Dans ta vie, ton quotidien, tes relations \\u2014 pas juste dans ta t\\u00eate.\\n\\nD\\u00e9cris-moi \\u00e7a. M\\u00eame si c'est flou. Surtout si c'est flou.\"\n};\nconst fmt = (key, prenom) => (MSG[key] || '').replace(/\\{PRENOM\\}/g, prenom || '');\n\nif (profil.coaching_phase === 'ORIENTE') {\n  return [{ json: {\n    user_id, channel, phone_or_chat_id,\n    onboarding_step: profil.onboarding_step || 1,\n    coaching_phase: 'ORIENTE',\n    prenom: profil.prenom || '',\n    response: `Tinga est toujours l\\u00e0 quand tu te sens pr\\u00eat(e)${profil.prenom ? ', ' + profil.prenom : ''}. \\ud83c\\udf3f`,\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nconst step = Number(profil.onboarding_step) || 0;\nconst prenom = profil.prenom || '';\n\nif (profil.not_found) {\n  return [{ json: {\n    user_id, channel, phone_or_chat_id,\n    onboarding_step: 0, coaching_phase: 'ONBOARDING',\n    is_new: true, response: MSG['0'],\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 0) {\n  const nom = extractPrenom(message);\n  if (!nom) {\n    return [{ json: {\n      ...profil, user_id, channel, phone_or_chat_id,\n      onboarding_step: 0,\n      response: MSG['0_retry'],\n      needs_triage: false, needs_llm: false, needs_coaching_llm: false\n    }}];\n  }\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 1, prenom: nom,\n    response: fmt('1', nom),\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 1) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 2, etat_initial: sanitize(message),\n    response: fmt('2', prenom),\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 2) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 3, situation_initiale: sanitize(message),\n    response: null,\n    needs_triage: true, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 3) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 4, response: MSG['3'],\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 4) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 5, situation: sanitize(message),\n    response: fmt('4', prenom),\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 5) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 6, defi_exprime: sanitize(message),\n    response: fmt('5', prenom),\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 6) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 7, ecosysteme: sanitize(message),\n    response: MSG['6'],\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 7) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 8, deja_essaye: sanitize(message),\n    response: MSG['7'],\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 8) {\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 9, vision_reussite: sanitize(message),\n    response: null,\n    needs_triage: false, needs_llm: true, needs_coaching_llm: false\n  }}];\n}\n\nif (step === 9) {\n  const msgLow = message.toLowerCase();\n  const motsCles = [\n    'oui','ok','d\\'accord','parfait','convient','valid\\u00e9','ok\\u00e9','\\u00e7a me va','c\\'est bon',\n    'super','g\\u00e9nial','yes','allons-y','go','top','bien','bonne id\\u00e9e','j\\'accepte',\n    'je valide','on y va','nickel','let\\'s go','c\\'est parfait','\\u00e7a convient','correct'\n  ];\n  const valide = motsCles.some(k => msgLow.includes(k));\n  if (valide) {\n    return [{ json: {\n      ...profil, user_id, channel, phone_or_chat_id,\n      onboarding_step: 10, coaching_phase: 'PROGRAMME_VALIDE',\n      response: `Parfait, ${prenom} ! Ton programme est lanc\\u00e9. \\ud83c\\udf3f\\n\\nOn commence d\\u00e8s maintenant. Je reviens vers toi avec la premi\\u00e8re s\\u00e9ance.`,\n      needs_triage: false, needs_llm: false, needs_coaching_llm: false\n    }}];\n  }\n  return [{ json: {\n    ...profil, user_id, channel, phone_or_chat_id,\n    onboarding_step: 9,\n    response: `Je t'entends, ${prenom}. Dis-moi ce que tu voudrais ajuster \\u2014 je l'adapte.`,\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n\n// Step 10+ : coaching actif — route vers le LLM de coaching\nreturn [{ json: {\n  ...profil, user_id, channel, phone_or_chat_id,\n  onboarding_step: step,\n  coaching_phase: profil.coaching_phase || 'PROGRAMME_VALIDE',\n  message_actuel: message,\n  response: null,\n  needs_triage: false, needs_llm: false, needs_coaching_llm: true\n}}];\n"
       },
       "id": "e1eabe44-37ba-48b7-ae2b-3a7451274b23",
       "name": "Check User & Route",
@@ -190,6 +184,215 @@
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cc001001-0000-0000-0000-000000000001",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true },
+              "leftValue": "={{ $json.needs_coaching_llm === true }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc001001-0000-0000-0000-000000000002",
+      "name": "IF — Coaching LLM ?",
+      "type": "n8n-nodes-base.if",
+      "position": [784, 496],
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "url": "=https://cvibiqnichugevzgcqwp.supabase.co/rest/v1/coach_programs?user_id=eq.{{$json.user_id}}&order=created_at.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "id": "cc002002-0000-0000-0000-000000000003",
+      "name": "Supabase — Lire Programme",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1008, 496],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $('Check User & Route').first().json;\nconst input = $input.all();\nlet programme = {};\nif (input.length > 0 && input[0].json) {\n  const first = input[0].json;\n  if (first && first.user_id) programme = first;\n  else if (Array.isArray(first) && first.length > 0) programme = first[0];\n}\nreturn [{ json: { ...d, programme } }];\n"
+      },
+      "id": "cc003003-0000-0000-0000-000000000004",
+      "name": "Parse Programme",
+      "type": "n8n-nodes-base.code",
+      "position": [1232, 496],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $input.first().json;\nconst prenom = d.prenom || '';\nconst programme = d.programme || {};\n\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst themes = Array.isArray(programme.themes)\n  ? programme.themes.map(t => `\\u2022 S\\u00e9ance ${t.numero} \\u2014 ${t.theme}: ${t.objectif}`).join('\\n')\n  : 'Programme en cours';\n\nconst prompt = `Tu es Tinga, coach IA ancr\\u00e9 dans la m\\u00e9thodologie du coaching \\u00e0 l'africaine d'Elijah Parfait ONDO OYONO.\\n\\nTu accompagnes ${prenom} dans son programme de coaching.\\n\\nPROGRAMME DE ${prenom.toUpperCase()} :\\nObjectif global : ${programme.objectif_global || 'non pr\\u00e9cis\\u00e9'}\\nDur\\u00e9e : ${programme.duree_estimee || '6 semaines'}\\nCrit\\u00e8res de r\\u00e9ussite : ${programme.criteres_evaluation || 'non pr\\u00e9cis\\u00e9'}\\n\\nTH\\u00c8MES DU PROGRAMME :\\n${themes}\\n\\nCONTEXTE PERSONNEL :\\n- Situation : \"${sanitize(d.situation)}\"\\n- D\\u00e9fi principal : \"${sanitize(d.defi_exprime)}\"\\n- Ce qui a d\\u00e9j\\u00e0 \\u00e9t\\u00e9 tent\\u00e9 : \"${sanitize(d.deja_essaye)}\"\\n- Vision de r\\u00e9ussite : \"${sanitize(d.vision_reussite)}\"\\n\\nMESSAGE ACTUEL DE ${prenom} : \"${sanitize(d.message_actuel)}\"\\n\\nR\\u00e9ponds en coach bienveillant et direct. 2-4 paragraphes maximum. Pose UNE seule question de suivi si n\\u00e9cessaire. Ton chaleureux, ancr\\u00e9 dans la r\\u00e9alit\\u00e9 africaine. Ne r\\u00e9ponds pas avec une liste \\u2014 parle comme un coach.`;\n\nreturn [{ json: { ...d, coaching_prompt: prompt } }];\n"
+      },
+      "id": "cc004004-0000-0000-0000-000000000005",
+      "name": "Build Coaching Prompt",
+      "type": "n8n-nodes-base.code",
+      "position": [1456, 496],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.coaching_prompt }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [1680, 496],
+      "id": "cc005005-0000-0000-0000-000000000006",
+      "name": "LLM Chain — Coaching"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": { "maxTokensToSample": 1200, "temperature": 0.5 }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [1680, 640],
+      "id": "cc006006-0000-0000-0000-000000000007",
+      "name": "Groq — Coaching",
+      "credentials": {
+        "groqApi": { "id": "r2Ij0yqdN2dpjWcQ", "name": "Groq TINGA" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst text = ($input.first().json.text || '').trim();\nconst d = $('Check User & Route').first().json;\nif (!text) {\n  return [{ json: {\n    ...d,\n    response: `Je suis l\\u00e0, ${d.prenom || ''}. Qu'est-ce qui se passe pour toi aujourd'hui ?`\n  }}];\n}\nreturn [{ json: { ...d, response: text } }];\n"
+      },
+      "id": "cc007007-0000-0000-0000-000000000008",
+      "name": "Parse Coaching",
+      "type": "n8n-nodes-base.code",
+      "position": [1904, 496],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            {
+              "id": "cc008008-0000-0000-0000-000000000009",
+              "operator": { "type": "string", "operation": "equals" },
+              "leftValue": "={{ $('Check User & Route').item.json.channel }}",
+              "rightValue": "telegram"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cc009009-0000-0000-0000-000000000010",
+      "name": "IF Canal D — Coaching (Telegram ?)",
+      "type": "n8n-nodes-base.if",
+      "position": [2128, 496],
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Check User & Route').item.json.phone_or_chat_id }}",
+        "text": "={{ $json.response }}",
+        "additionalFields": { "appendAttribution": false }
+      },
+      "id": "cc010010-0000-0000-0000-000000000011",
+      "name": "Telegram D — Coaching",
+      "type": "n8n-nodes-base.telegram",
+      "position": [2352, 480],
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": { "id": "n0l8mGZ02zoFtrht", "name": "Coach Tinga" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Check User & Route').item.json.phone_or_chat_id.replace('@s.whatsapp.net','').replace('@c.us',''), textMessage: { text: $json.response } }) }}",
+        "options": {}
+      },
+      "id": "cc011011-0000-0000-0000-000000000012",
+      "name": "WhatsApp D — Coaching",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2352, 640],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cvibiqnichugevzgcqwp.supabase.co/rest/v1/coach_conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_id: $('Check User & Route').item.json.user_id, role: 'coach', content: $json.response, onboarding_step: $('Check User & Route').item.json.onboarding_step, coaching_phase: $('Check User & Route').item.json.coaching_phase || 'PROGRAMME_VALIDE', timestamp: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "cc012012-0000-0000-0000-000000000013",
+      "name": "Log Coach D — Coaching",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2576, 480],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cvibiqnichugevzgcqwp.supabase.co/rest/v1/coach_conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_id: $('Check User & Route').item.json.user_id, role: 'coach', content: $json.response, onboarding_step: $('Check User & Route').item.json.onboarding_step, coaching_phase: $('Check User & Route').item.json.coaching_phase || 'PROGRAMME_VALIDE', timestamp: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "cc013013-0000-0000-0000-000000000014",
+      "name": "Log Coach WA D — Coaching",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2576, 640],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
           "conditions": [
             {
               "id": "d5118f20-5464-42cd-9dc7-0967ee472f01",
@@ -205,7 +408,7 @@
       "id": "7b2ed775-481d-49ca-94ad-ee7d3ba5f857",
       "name": "IF Canal A — Scripté (Telegram ?)",
       "type": "n8n-nodes-base.if",
-      "position": [784, 496],
+      "position": [784, 736],
       "typeVersion": 2.3
     },
     {
@@ -217,7 +420,7 @@
       "id": "a5efe60a-41d4-44e1-a2c0-d5fc1258db90",
       "name": "Telegram A — Scripté",
       "type": "n8n-nodes-base.telegram",
-      "position": [1024, 480],
+      "position": [1024, 720],
       "typeVersion": 1.2,
       "webhookId": "b2d81d97-dc5e-4196-aede-5fc96f641dfc",
       "credentials": {
@@ -243,7 +446,7 @@
       "id": "b2c3d4e5-f6a7-8901-bcde-f12345678902",
       "name": "WhatsApp A — Scripté",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [1024, 640],
+      "position": [1024, 880],
       "typeVersion": 4.2,
       "alwaysOutputData": true
     },
@@ -268,7 +471,7 @@
       "id": "056e3333-3f4c-4d95-8437-cfb2091ea006",
       "name": "Log Coach A — Scripté",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [1264, 480],
+      "position": [1264, 720],
       "typeVersion": 4.2,
       "alwaysOutputData": true
     },
@@ -293,13 +496,13 @@
       "id": "f6a7b8c9-d0e1-2345-fabc-456789012346",
       "name": "Log Coach WA A — Scripté",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [1264, 640],
+      "position": [1264, 880],
       "typeVersion": 4.2,
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "\nconst d = $('Check User & Route').first().json;\nconst prenom = d.prenom || '';\n\n// Sanitise les saisies utilisateur pour éviter l'injection dans le prompt\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst prompt = `Tu es Tinga, coach IA ancré dans la méthodologie du coaching à l'africaine.\n\nTu viens d'écouter ${prenom} pendant deux échanges :\n- Ce qu'il/elle a dit sur comment il/elle va : \"${sanitize(d.etat_initial)}\"\n- Ce qu'il/elle a dit sur sa situation concrète : \"${sanitize(d.situation_initiale)}\"\n\nTa mission : évaluer si cette personne peut bénéficier d'un coaching, ou si sa situation nécessite d'abord un accompagnement médical ou psychologique spécialisé.\n\nIMPORTANT : Un coaching est POSSIBLE même si la personne traverse une période difficile, à condition que ce ne soit pas une crise aigüe (idées suicidaires actives, dépression sévère, psychose, addiction grave incontrôlée).\n\nRéponds UNIQUEMENT en JSON sans markdown ni backticks :\n{\"peut_coacher\": true ou false, \"message_coach\": \"Si peut_coacher true : message chaleureux de 2-3 phrases qui reformule ce que tu as entendu et valide que vous pouvez travailler ensemble. NE pose PAS de question. Si peut_coacher false : message bienveillant de 2-3 phrases qui oriente vers un professionnel de santé sans être brutal, en laissant la porte ouverte.\"}\n\nRègles strictes :\n- Si doute, peut_coacher = true\n- Ton chaleureux, jamais condescendant\n- NE pose AUCUNE question dans message_coach\n- AUCUN retour à la ligne dans les valeurs JSON`;\n\nreturn [{ json: { ...d, triage_prompt: prompt } }];\n"
+        "jsCode": "\nconst d = $('Check User & Route').first().json;\nconst prenom = d.prenom || '';\n\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst prompt = `Tu es Tinga, coach IA ancr\\u00e9 dans la m\\u00e9thodologie du coaching \\u00e0 l'africaine.\\n\\nTu viens d'\\u00e9couter ${prenom} pendant deux \\u00e9changes :\\n- Ce qu'il/elle a dit sur comment il/elle va : \"${sanitize(d.etat_initial)}\"\\n- Ce qu'il/elle a dit sur sa situation concr\\u00e8te : \"${sanitize(d.situation_initiale)}\"\\n\\nTa mission : \\u00e9valuer si cette personne peut b\\u00e9n\\u00e9ficier d'un coaching, ou si sa situation n\\u00e9cessite d'abord un accompagnement m\\u00e9dical ou psychologique sp\\u00e9cialis\\u00e9.\\n\\nIMPORTANT : Un coaching est POSSIBLE m\\u00eame si la personne traverse une p\\u00e9riode difficile, \\u00e0 condition que ce ne soit pas une crise aigu\\u00eb (id\\u00e9es suicidaires actives, d\\u00e9pression s\\u00e9v\\u00e8re, psychose, addiction grave incontr\\u00f4l\\u00e9e).\\n\\nR\\u00e9ponds UNIQUEMENT en JSON sans markdown ni backticks :\\n{\"peut_coacher\": true ou false, \"message_coach\": \"Si peut_coacher true : message chaleureux de 2-3 phrases qui reformule ce que tu as entendu et valide que vous pouvez travailler ensemble. NE pose PAS de question. Si peut_coacher false : message bienveillant de 2-3 phrases qui oriente vers un professionnel de sant\\u00e9 sans \\u00eatre brutal, en laissant la porte ouverte.\"}\\n\\nR\\u00e8gles strictes :\\n- Si doute, peut_coacher = true\\n- Ton chaleureux, jamais condescendant\\n- NE pose AUCUNE question dans message_coach\\n- AUCUN retour \\u00e0 la ligne dans les valeurs JSON`;\n\nreturn [{ json: { ...d, triage_prompt: prompt } }];\n"
       },
       "id": "57543fa6-8af8-4876-94dd-ab9f9b572745",
       "name": "Build Triage Prompt",
@@ -335,7 +538,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst d = $('Check User & Route').first().json;\n\nconst MSG_ORIENTE = `{PRENOM}, merci de me faire confiance avec ça.\\n\\nCe que tu traverses mérite un accompagnement que je ne peux pas t'offrir seul — et je préfère être honnête plutôt que de prétendre le contraire.\\n\\nCe dont tu as besoin, c'est d'un professionnel de santé mentale qualifié : un psychologue ou un psychiatre qui peut t'accompagner comme tu le mérites.\\n\\n👉 Si tu es au Gabon :\\nCentre Hospitalier Universitaire de Libreville\\nService de psychiatrie : +241 01 76 18 18\\n\\nSi jamais tu veux revenir ici pour travailler sur d'autres dimensions de ta vie quand tu te sens prêt(e), Tinga sera là.\\n\\nPrens soin de toi. 🌿`;\n\ntry {\n  const raw = ($input.first().json.text || '').replace(/```json|```/g, '').trim();\n  const jsonMatch = raw.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('JSON triage introuvable');\n\n  let cleaned = '';\n  let inString = false, escaped = false;\n  for (const char of jsonMatch[0]) {\n    if (escaped) { cleaned += char; escaped = false; continue; }\n    if (char === '\\\\') { cleaned += char; escaped = true; continue; }\n    if (char === '\"') inString = !inString;\n    if (inString && (char === '\\n' || char === '\\r' || char === '\\t')) { cleaned += ' '; continue; }\n    cleaned += char;\n  }\n\n  const parsed = JSON.parse(cleaned);\n\n  if (!parsed.peut_coacher) {\n    return [{ json: {\n      ...d, coaching_phase: 'ORIENTE',\n      response: MSG_ORIENTE.replace(/\\{PRENOM\\}/g, d.prenom || ''),\n      needs_triage: false, needs_llm: false\n    }}];\n  }\n\n  return [{ json: {\n    ...d, response: parsed.message_coach,\n    coaching_phase: 'ONBOARDING',\n    needs_triage: false, needs_llm: false\n  }}];\n\n} catch (e) {\n  // Échec LLM — on suppose coachable, message neutre de transition\n  return [{ json: {\n    ...d,\n    response: `Je t'entends, ${d.prenom || ''}. Dis-moi un peu plus sur ton quotidien en ce moment.`,\n    coaching_phase: 'ONBOARDING',\n    needs_triage: false, needs_llm: false\n  }}];\n}\n"
+        "jsCode": "\nconst d = $('Check User & Route').first().json;\n\nconst MSG_ORIENTE = `{PRENOM}, merci de me faire confiance avec \\u00e7a.\\n\\nCe que tu traverses m\\u00e9rite un accompagnement que je ne peux pas t'offrir seul \\u2014 et je pr\\u00e9f\\u00e8re \\u00eatre honn\\u00eate plut\\u00f4t que de pr\\u00e9tendre le contraire.\\n\\nCe dont tu as besoin, c'est d'un professionnel de sant\\u00e9 mentale qualifi\\u00e9 : un psychologue ou un psychiatre qui peut t'accompagner comme tu le m\\u00e9rites.\\n\\n\\ud83d\\udc49 Si tu es au Gabon :\\nCentre Hospitalier Universitaire de Libreville\\nService de psychiatrie : +241 01 76 18 18\\n\\nSi jamais tu veux revenir ici pour travailler sur d'autres dimensions de ta vie quand tu te sens pr\\u00eat(e), Tinga sera l\\u00e0.\\n\\nPrens soin de toi. \\ud83c\\udf3f`;\n\ntry {\n  const raw = ($input.first().json.text || '').replace(/```json|```/g, '').trim();\n  const jsonMatch = raw.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('JSON triage introuvable');\n\n  let cleaned = '';\n  let inString = false, escaped = false;\n  for (const char of jsonMatch[0]) {\n    if (escaped) { cleaned += char; escaped = false; continue; }\n    if (char === '\\\\') { cleaned += char; escaped = true; continue; }\n    if (char === '\"') inString = !inString;\n    if (inString && (char === '\\n' || char === '\\r' || char === '\\t')) { cleaned += ' '; continue; }\n    cleaned += char;\n  }\n\n  const parsed = JSON.parse(cleaned);\n\n  if (!parsed.peut_coacher) {\n    return [{ json: {\n      ...d, coaching_phase: 'ORIENTE',\n      response: MSG_ORIENTE.replace(/\\{PRENOM\\}/g, d.prenom || ''),\n      needs_triage: false, needs_llm: false, needs_coaching_llm: false\n    }}];\n  }\n\n  return [{ json: {\n    ...d, response: parsed.message_coach,\n    coaching_phase: 'ONBOARDING',\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n\n} catch (e) {\n  return [{ json: {\n    ...d,\n    response: `Je t'entends, ${d.prenom || ''}. Dis-moi un peu plus sur ton quotidien en ce moment.`,\n    coaching_phase: 'ONBOARDING',\n    needs_triage: false, needs_llm: false, needs_coaching_llm: false\n  }}];\n}\n"
       },
       "id": "ab331814-a4e4-461e-a181-7ec6cdc0834c",
       "name": "Parse Triage",
@@ -481,7 +684,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst d = $('Check User & Route').first().json;\n\n// Sanitise les saisies utilisateur pour éviter l'injection dans le prompt\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst prompt = `Tu es Tinga, coach IA construit sur la méthodologie de coaching à l'africaine d'Elijah Parfait ONDO OYONO.\n\nTu viens de terminer l'entretien préalable avec ${d.prenom}. Voici exactement ce qu'il/elle t'a dit :\n- Comment il/elle allait : \"${sanitize(d.etat_initial)}\"\n- Contexte de vie concret : \"${sanitize(d.situation_initiale)}\"\n- Activité/travail actuel : \"${sanitize(d.situation)}\"\n- Ce qui l'a amené(e) ici : \"${sanitize(d.defi_exprime)}\"\n- Écosystème relationnel : \"${sanitize(d.ecosysteme)}\"\n- Ce qui a déjà été tenté : \"${sanitize(d.deja_essaye)}\"\n- Vision de réussite : \"${sanitize(d.vision_reussite)}\"\n\nProduis UNIQUEMENT un JSON valide sans markdown, sans backticks, sans retour à la ligne dans les valeurs :\n{\"synthese\": \"2-3 phrases. Ce que tu as compris. UNIQUEMENT ce qu'il/elle a dit.\", \"objectif_global\": \"L'objectif en 1 phrase concrète.\", \"nb_seances\": 6, \"duree_estimee\": \"6 semaines\", \"criteres_evaluation\": \"Comment ${d.prenom} saura que ça a réussi.\", \"themes\": [{\"numero\": 1, \"theme\": \"Titre\", \"objectif\": \"Ce qu'on explore\"}, {\"numero\": 2, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 3, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 4, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 5, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 6, \"theme\": \"Bilan et projection\", \"objectif\": \"Évaluation et plan d'autonomie\"}], \"message_programme\": \"Message à envoyer à ${d.prenom} : synthèse de ce que tu as compris + programme proposé. Termine en demandant si ça lui convient.\"}\n\nRègles STRICTES : zéro affirmation inventée, ton ancré dans la réalité africaine, AUCUN retour à la ligne dans les valeurs JSON.`;\n\nreturn [{ json: { ...d, prompt } }];\n"
+        "jsCode": "\nconst d = $('Check User & Route').first().json;\n\nconst sanitize = (str) => (str || '').replace(/[\"'`{}<>\\\\]/g, ' ').trim().slice(0, 500);\n\nconst prompt = `Tu es Tinga, coach IA construit sur la m\\u00e9thodologie de coaching \\u00e0 l'africaine d'Elijah Parfait ONDO OYONO.\\n\\nTu viens de terminer l'entretien pr\\u00e9alable avec ${d.prenom}. Voici exactement ce qu'il/elle t'a dit :\\n- Comment il/elle allait : \"${sanitize(d.etat_initial)}\"\\n- Contexte de vie concret : \"${sanitize(d.situation_initiale)}\"\\n- Activit\\u00e9/travail actuel : \"${sanitize(d.situation)}\"\\n- Ce qui l'a amen\\u00e9(e) ici : \"${sanitize(d.defi_exprime)}\"\\n- \\u00c9cosyst\\u00e8me relationnel : \"${sanitize(d.ecosysteme)}\"\\n- Ce qui a d\\u00e9j\\u00e0 \\u00e9t\\u00e9 tent\\u00e9 : \"${sanitize(d.deja_essaye)}\"\\n- Vision de r\\u00e9ussite : \"${sanitize(d.vision_reussite)}\"\\n\\nProduis UNIQUEMENT un JSON valide sans markdown, sans backticks, sans retour \\u00e0 la ligne dans les valeurs :\\n{\"synthese\": \"2-3 phrases. Ce que tu as compris. UNIQUEMENT ce qu'il/elle a dit.\", \"objectif_global\": \"L'objectif en 1 phrase concr\\u00e8te.\", \"nb_seances\": 6, \"duree_estimee\": \"6 semaines\", \"criteres_evaluation\": \"Comment ${d.prenom} saura que \\u00e7a a r\\u00e9ussi.\", \"themes\": [{\"numero\": 1, \"theme\": \"Titre\", \"objectif\": \"Ce qu'on explore\"}, {\"numero\": 2, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 3, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 4, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 5, \"theme\": \"Titre\", \"objectif\": \"...\"}, {\"numero\": 6, \"theme\": \"Bilan et projection\", \"objectif\": \"\\u00c9valuation et plan d'autonomie\"}], \"message_programme\": \"Message \\u00e0 envoyer \\u00e0 ${d.prenom} : synth\\u00e8se de ce que tu as compris + programme propos\\u00e9. Termine en demandant si \\u00e7a lui convient.\"}\\n\\nR\\u00e8gles STRICTES : z\\u00e9ro affirmation invent\\u00e9e, ton ancr\\u00e9 dans la r\\u00e9alit\\u00e9 africaine, AUCUN retour \\u00e0 la ligne dans les valeurs JSON.`;\n\nreturn [{ json: { ...d, prompt } }];\n"
       },
       "id": "dc1676b0-e1a6-48c9-a4ad-d94da0a4cbac",
       "name": "Build Synthèse Prompt",
@@ -517,7 +720,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\ntry {\n  const raw = ($input.first().json.text || '').replace(/```json|```/g, '').trim();\n  const jsonMatch = raw.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('JSON synthèse introuvable');\n\n  let cleaned = '';\n  let inString = false, escaped = false;\n  for (const char of jsonMatch[0]) {\n    if (escaped) { cleaned += char; escaped = false; continue; }\n    if (char === '\\\\') { cleaned += char; escaped = true; continue; }\n    if (char === '\"') inString = !inString;\n    if (inString && (char === '\\n' || char === '\\r' || char === '\\t')) { cleaned += ' '; continue; }\n    cleaned += char;\n  }\n\n  const parsed = JSON.parse(cleaned);\n  const d = $('Check User & Route').first().json;\n\n  return [{ json: {\n    ...d,\n    response: parsed.message_programme,\n    programme_data: {\n      objectif_global: parsed.objectif_global,\n      nb_seances: parsed.nb_seances,\n      duree_estimee: parsed.duree_estimee,\n      criteres_evaluation: parsed.criteres_evaluation,\n      themes: parsed.themes\n    }\n  }}];\n\n} catch (e) {\n  const d = $('Check User & Route').first().json;\n  // Échec LLM — invite l'utilisateur à retenter\n  return [{ json: {\n    ...d,\n    response: `${d.prenom || ''}, j'ai rencontré un problème technique lors de la création de ton programme. Peux-tu me renvoyer ta vision de réussite pour que je puisse réessayer ?`,\n    programme_data: null\n  }}];\n}\n"
+        "jsCode": "\ntry {\n  const raw = ($input.first().json.text || '').replace(/```json|```/g, '').trim();\n  const jsonMatch = raw.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('JSON synth\\u00e8se introuvable');\n\n  let cleaned = '';\n  let inString = false, escaped = false;\n  for (const char of jsonMatch[0]) {\n    if (escaped) { cleaned += char; escaped = false; continue; }\n    if (char === '\\\\') { cleaned += char; escaped = true; continue; }\n    if (char === '\"') inString = !inString;\n    if (inString && (char === '\\n' || char === '\\r' || char === '\\t')) { cleaned += ' '; continue; }\n    cleaned += char;\n  }\n\n  const parsed = JSON.parse(cleaned);\n  const d = $('Check User & Route').first().json;\n\n  return [{ json: {\n    ...d,\n    response: parsed.message_programme,\n    programme_data: {\n      objectif_global: parsed.objectif_global,\n      nb_seances: parsed.nb_seances,\n      duree_estimee: parsed.duree_estimee,\n      criteres_evaluation: parsed.criteres_evaluation,\n      themes: parsed.themes\n    }\n  }}];\n\n} catch (e) {\n  const d = $('Check User & Route').first().json;\n  return [{ json: {\n    ...d,\n    response: `${d.prenom || ''}, j'ai rencontr\\u00e9 un probl\\u00e8me technique lors de la cr\\u00e9ation de ton programme. Peux-tu me renvoyer ta vision de r\\u00e9ussite pour que je puisse r\\u00e9essayer ?`,\n    programme_data: null\n  }}];\n}\n"
       },
       "id": "cacd5fdc-db11-4c1c-befe-efdcb3706303",
       "name": "Parse Synthèse",
@@ -697,8 +900,56 @@
     "IF — Synthèse LLM ?": {
       "main": [
         [{ "node": "Build Synthèse Prompt", "type": "main", "index": 0 }],
+        [{ "node": "IF — Coaching LLM ?", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF — Coaching LLM ?": {
+      "main": [
+        [{ "node": "Supabase — Lire Programme", "type": "main", "index": 0 }],
         [{ "node": "IF Canal A — Scripté (Telegram ?)", "type": "main", "index": 0 }]
       ]
+    },
+    "Supabase — Lire Programme": {
+      "main": [[{ "node": "Parse Programme", "type": "main", "index": 0 }]]
+    },
+    "Parse Programme": {
+      "main": [[{ "node": "Build Coaching Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Coaching Prompt": {
+      "main": [[{ "node": "LLM Chain — Coaching", "type": "main", "index": 0 }]]
+    },
+    "Groq — Coaching": {
+      "ai_languageModel": [[{ "node": "LLM Chain — Coaching", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "LLM Chain — Coaching": {
+      "main": [[{ "node": "Parse Coaching", "type": "main", "index": 0 }]]
+    },
+    "Parse Coaching": {
+      "main": [[{ "node": "IF Canal D — Coaching (Telegram ?)", "type": "main", "index": 0 }]]
+    },
+    "IF Canal D — Coaching (Telegram ?)": {
+      "main": [
+        [{ "node": "Telegram D — Coaching", "type": "main", "index": 0 }],
+        [{ "node": "WhatsApp D — Coaching", "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram D — Coaching": {
+      "main": [[{ "node": "Log Coach D — Coaching", "type": "main", "index": 0 }]]
+    },
+    "WhatsApp D — Coaching": {
+      "main": [[{ "node": "Log Coach WA D — Coaching", "type": "main", "index": 0 }]]
+    },
+    "IF Canal A — Scripté (Telegram ?)": {
+      "main": [
+        [{ "node": "Telegram A — Scripté", "type": "main", "index": 0 }],
+        [{ "node": "WhatsApp A — Scripté", "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram A — Scripté": {
+      "main": [[{ "node": "Log Coach A — Scripté", "type": "main", "index": 0 }]]
+    },
+    "WhatsApp A — Scripté": {
+      "main": [[{ "node": "Log Coach WA A — Scripté", "type": "main", "index": 0 }]]
     },
     "Build Triage Prompt": {
       "main": [[{ "node": "LLM Chain — Triage", "type": "main", "index": 0 }]]
@@ -753,18 +1004,6 @@
     },
     "WhatsApp C — Synthèse": {
       "main": [[{ "node": "Log Coach WA C — Synthèse", "type": "main", "index": 0 }]]
-    },
-    "IF Canal A — Scripté (Telegram ?)": {
-      "main": [
-        [{ "node": "Telegram A — Scripté", "type": "main", "index": 0 }],
-        [{ "node": "WhatsApp A — Scripté", "type": "main", "index": 0 }]
-      ]
-    },
-    "Telegram A — Scripté": {
-      "main": [[{ "node": "Log Coach A — Scripté", "type": "main", "index": 0 }]]
-    },
-    "WhatsApp A — Scripté": {
-      "main": [[{ "node": "Log Coach WA A — Scripté", "type": "main", "index": 0 }]]
     }
   },
   "active": false,
@@ -772,7 +1011,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "v3-corrige-2026-05-18",
+  "versionId": "v3b-coaching-2026-05-18",
   "meta": {
     "templateCredsSetupCompleted": false,
     "instanceId": "ef4f6e096e4f388cc53079b9f28db5969c578c760fd94221fe1b8fbaa6e035a5"
