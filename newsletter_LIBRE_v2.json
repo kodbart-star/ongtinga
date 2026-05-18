@@ -1,0 +1,898 @@
+{
+  "name": "Newsletter LIBRE de l'ONG Tinga",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1488,
+        80
+      ],
+      "id": "e6d5addc-18d0-46c2-89bd-55f0d45136b5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "query": "fiscalité TVA impôts DGI CNSS PME indépendants Gabon 2026",
+        "options": {
+          "topic": "news",
+          "search_depth": "advanced",
+          "max_results": 8,
+          "days": 7,
+          "include_images": true,
+          "include_domains": [
+            "gabonreview.com",
+            "info241.com",
+            "gabonmediatime.com",
+            "fr.infosgabon.com",
+            "agenceecofin.com",
+            "gabonclic.info"
+          ]
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        -480
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Tavily Fiscalité",
+      "credentials": {
+        "tavilyApi": {
+          "id": "Qh4bnHTxOpHEAaOf",
+          "name": "Tavily Tinga"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "accès crédit prêt banque PME TPE Gabon BGFIBank BCEG financement 2026",
+        "options": {
+          "topic": "news",
+          "search_depth": "advanced",
+          "max_results": 8,
+          "days": 14,
+          "include_images": true,
+          "include_domains": [
+            "gabonreview.com",
+            "info241.com",
+            "agenceecofin.com",
+            "gabonmediatime.com",
+            "fr.infosgabon.com"
+          ]
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        -320
+      ],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Tavily Crédit",
+      "credentials": {
+        "tavilyApi": {
+          "id": "Qh4bnHTxOpHEAaOf",
+          "name": "Tavily Tinga"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "marchés publics appels offres contrats entreprises Gabon opportunités 2026",
+        "options": {
+          "topic": "news",
+          "search_depth": "advanced",
+          "max_results": 8,
+          "days": 7,
+          "include_images": true,
+          "include_domains": [
+            "gabonreview.com",
+            "info241.com",
+            "gabonmediatime.com",
+            "agenceecofin.com",
+            "gabonclic.info"
+          ]
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        -160
+      ],
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Tavily Marché",
+      "credentials": {
+        "tavilyApi": {
+          "id": "Qh4bnHTxOpHEAaOf",
+          "name": "Tavily Tinga"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "conseils gestion entreprise Afrique francophone TPE indépendants réussir",
+        "options": {
+          "topic": "general",
+          "search_depth": "advanced",
+          "max_results": 10,
+          "days": 30,
+          "include_images": true,
+          "include_domains": [
+            "agenceecofin.com",
+            "jeuneafrique.com",
+            "afripriz.org",
+            "macarrierepro.com",
+            "ietp.com"
+          ]
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        0
+      ],
+      "id": "04e8c3aa-26c4-418a-a5fc-fb41e0d5f68a",
+      "name": "Coaching",
+      "credentials": {
+        "tavilyApi": {
+          "id": "Qh4bnHTxOpHEAaOf",
+          "name": "Tavily Tinga"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "articles_traites",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date_collecte",
+              "condition": "gt",
+              "keyValue": "={{ $now.minus({days: 7}).toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        176
+      ],
+      "id": "6c5aa04b-7d58-4dcf-9bca-89d800b39ed8",
+      "name": "Tally Check",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgQaNipmMDt1dnkB",
+          "name": "LE BURÖ"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "articles_traites",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date_collecte",
+              "condition": "gt",
+              "keyValue": "={{ $now.minus({days: 7}).toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        336
+      ],
+      "id": "c2d81ddc-389d-4c8c-b0d9-054ceca14d33",
+      "name": "ONG Check",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgQaNipmMDt1dnkB",
+          "name": "LE BURÖ"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -992,
+        64
+      ],
+      "id": "fe775217-6192-496a-8fe6-892b6818cfa9",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "let tavily_actu_resultats = [];\nlet tavily_actu_images   = [];\nlet tavily_coaching      = { resultats: [], images: [] };\nlet invite_rows          = [];\nlet ong_rows             = [];\n\nfunction compresser(payload) {\n  const resultats = (payload.resultats || [])\n    .slice(0, 3)\n    .map(r => ({\n      title:   r.title   || '',\n      url:     r.url     || '',\n      content: (r.content || r.snippet || '').slice(0, 1500)\n    }));\n  const images = (payload.images || [])\n    .filter(img => {\n      const url = typeof img === 'string' ? img : (img.url || '');\n      return url.length > 0\n        && !url.endsWith('.ico')\n        && !url.endsWith('.svg')\n        && !url.includes('favicon')\n        && !url.includes('logo')\n        && !url.includes('gravatar')\n        && !url.includes('avatar')\n        && (url.includes('.jpg') || url.includes('.jpeg')\n            || url.includes('.png') || url.includes('.webp')\n            || url.includes('.gif'));\n    })\n    .slice(0, 3);\n  return { resultats, images };\n}\n\n// Le coaching se distingue par ses mots-clés de requête\nconst COACHING_KEYWORDS = ['réussir', 'gestion', 'entrepreneur', 'afrique'];\n\nfor (const item of items) {\n  const d = item.json;\n  if (d.results !== undefined && d.query !== undefined) {\n    const payload = {\n      resultats: Array.isArray(d.results) ? d.results : [],\n      images:    Array.isArray(d.images)  ? d.images  : []\n    };\n    const q = (d.query || '').toLowerCase();\n    const is_coaching = COACHING_KEYWORDS.some(k => q.includes(k));\n    if (is_coaching) {\n      tavily_coaching = compresser(payload);\n    } else {\n      const compressed = compresser(payload);\n      tavily_actu_resultats.push(...compressed.resultats);\n      tavily_actu_images.push(...compressed.images);\n    }\n  } else if (d.frein_invisible !== undefined) {\n    invite_rows.push(d);\n  } else if (d.contenu !== undefined && d.created_at !== undefined) {\n    ong_rows.push(d);\n  }\n}\n\nconst tavily_actu = {\n  resultats: tavily_actu_resultats.slice(0, 9),\n  images:    tavily_actu_images.slice(0, 6)\n};\n\n// Candidats images : sources actu en priorité, coaching en fallback\nconst images_candidates = tavily_actu.images.length > 0\n  ? tavily_actu.images\n  : tavily_coaching.images;\n\nconst invite = (invite_rows.length > 0) ? {\n  disponible:              true,\n  nom:                     invite_rows[0].nom                     || null,\n  fonction:                invite_rows[0].fonction                || null,\n  frein_invisible:         invite_rows[0].frein_invisible         || null,\n  levier_acceleration:     invite_rows[0].levier_acceleration     || null,\n  partage_experience:      invite_rows[0].partage_experience      || null,\n  opportunite_sectorielle: invite_rows[0].opportunite_sectorielle || null,\n  engagement_tinga:        invite_rows[0].engagement_tinga        || null,\n  consentement:            invite_rows[0].consentement            || null\n} : { disponible: false };\n\nlet ong = { disponible: false };\nif (ong_rows.length > 0) {\n  const age_jours = (Date.now() - new Date(ong_rows[0].created_at)) / (1000 * 60 * 60 * 24);\n  ong = age_jours <= 14\n    ? { disponible: true,  contenu: ong_rows[0].contenu, date: ong_rows[0].created_at }\n    : { disponible: false, raison: 'contenu_trop_ancien' };\n}\n\nreturn [{\n  json: {\n    semaine:         new Date().toISOString().split('T')[0],\n    images_candidates,\n    sources:         { tavily_actu, tavily_coaching },\n    rubriques_optionnelles: { invite, vie_tinga: ong }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        96
+      ],
+      "id": "f2e2ab15-69ce-41d6-99ad-edae2997eb32",
+      "name": "normalisation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Vérifie les candidats via HEAD et retourne la première URL accessible.\n// En cas d'échec total, utilise le fallback Supabase Storage.\nconst FALLBACK_IMAGE = 'SUPABASE_CDN_BANNIERE_URL_ICI';\nconst candidates = $input.first().json.images_candidates || [];\n\nlet image_validee = FALLBACK_IMAGE;\n\nfor (const img_brut of candidates) {\n  const url = typeof img_brut === 'string' ? img_brut : (img_brut.url || '');\n  if (!url) continue;\n  try {\n    const resp = await this.helpers.httpRequest({\n      method: 'HEAD',\n      url,\n      timeout: 4000,\n      returnFullResponse: true\n    });\n    if (resp.statusCode >= 200 && resp.statusCode < 400) {\n      image_validee = url;\n      break;\n    }\n  } catch (e) {\n    // Image inaccessible — essayer la suivante\n  }\n}\n\nreturn [{ json: { ...$input.first().json, image_validee } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -80
+      ],
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "Sélection Image Fiable"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrait chiffres, montants, institutions et dates des sources Tavily\n// pour forcer l'agent Brief à produire des ancres réelles.\nconst data     = $input.first().json;\nconst all_text = JSON.stringify(data.sources || {});\n\nconst unique = arr => [...new Set(arr)];\n\nconst montants = unique(\n  [...all_text.matchAll(/(\\d[\\d\\s]{0,8}(?:[ \\s]000)?\\s*(?:FCFA|francs?\\s+CFA|F\\.?CFA))/gi)]\n    .map(m => m[1].replace(/\\s+/g, ' ').trim())\n).slice(0, 8);\n\nconst pourcentages = unique(\n  [...all_text.matchAll(/(\\d+[,.]?\\d*\\s*%)/g)]\n    .map(m => m[1].trim())\n).slice(0, 8);\n\nconst dates_detectees = unique(\n  [...all_text.matchAll(/\\b(\\d{1,2}(?:er)?\\s+(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\\s+\\d{4})\\b/gi)]\n    .map(m => m[1])\n).slice(0, 5);\n\nconst institutions = unique(\n  [...all_text.matchAll(/\\b(BGFIBank|BCEG|BEAC|CNAMGS|DGI|CNSS|SEEG|OPRAG|GSEZ|Okoum[eé]\\s+Capital|Gabon\\s+Oil\\s+Company|ANGTI|ANPI|AGASA)\\b/g)]\n    .map(m => m[1])\n);\n\nreturn [{\n  json: {\n    ...data,\n    faits_extraits: { montants, pourcentages, dates_detectees, institutions }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        -80
+      ],
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "Extraction Faits Chiffrés"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici les données brutes collectées pour la newsletter \\nLIBRE de cette semaine \\n({{ $node[\"Extraction Faits Chiffrés\"].json[\"semaine\"] }}).\\n\\nFAITS CHIFFRÉS EXTRAITS AUTOMATIQUEMENT :\\nMontants FCFA détectés : {{ $node[\"Extraction Faits Chiffrés\"].json.faits_extraits.montants.join(', ') || 'aucun' }}\\nPourcentages détectés : {{ $node[\"Extraction Faits Chiffrés\"].json.faits_extraits.pourcentages.join(', ') || 'aucun' }}\\nInstitutions citées : {{ $node[\"Extraction Faits Chiffrés\"].json.faits_extraits.institutions.join(', ') || 'aucune' }}\\n\\nDONNÉES COMPLÈTES À TRAITER :\\n{{ JSON.stringify($node[\"Extraction Faits Chiffrés\"].json) }}\\n\\nCONSIGNE IMMÉDIATE :\\nApplique les 4 étapes de ton rôle d'éditorialiste.\\n1. Filtre les faits (Réf. Aujourd'hui : \\n   {{ $node[\"Extraction Faits Chiffrés\"].json[\"semaine\"] }}).\\n2. Sélectionne l'image selon les critères définis.\\n3. Vérifie la disponibilité de l'invité et de la vie de l'ONG.\\n4. Construis le brief JSON strict.\\n\\nTU ES OBLIGÉ D'UTILISER AU MOINS UN FAIT CHIFFRÉ OU UNE INSTITUTION DÉTECTÉE PAR RUBRIQUE.\\nRESTE FACTUEL. SI UNE DONNÉE MANQUE, UTILISE \\\"matiere_insuffisante\\\": true.",
+        "options": {
+          "systemMessage": "FORMAT DE SORTIE STRICT : JSON uniquement. Pas de texte avant ou après.\n\nTu es l'Analyste Éditorial de LIBRE (ONG TINGA). Ton rôle n'est pas de résumer, mais d'extraire la substance vitale des sources pour un indépendant au Gabon.\n\nDIRECTIVES DE DENSITÉ :\n1. INTERDICTION de faire des généralités (ex: \"les opportunités\", \"le développement\").\n2. OBLIGATION d'extraire au moins deux \"ancres réelles\" par rubrique : noms propres, chiffres, dates, lieux, noms de banques (BCEG, BGFIBank, Okoumé Capital, etc.) ou décrets.\n3. Les FAITS CHIFFRÉS EXTRAITS AUTOMATIQUEMENT fournis dans le prompt sont des ancres obligatoires — tu dois en utiliser au moins une par rubrique active.\n\nÉTAPES DE TRAVAIL :\n- ANALYSE : Que change ce fait PRÉCISÉMENT pour celui qui travaille seul à Libreville ou Port-Gentil ?\n- SÉLECTION IMAGE : 1 seule URL valide (pas de logo/icon).\n- DÉTECTION DE TENSION : Quelle peur ou frustration réelle ce fait réveille-t-il ?\n\nSTRUCTURE DU JSON :\n{\n  \"semaine\": \"YYYY-MM-DD\",\n  \"image_selectionnee\": \"URL\",\n  \"rubriques_actives\": [\"actu_impact\", \"point_bloquant\", \"conseil\"],\n  \"actu_impact\": {\n    \"faits\": [{\"texte\": \"Détail précis avec nom propre/chiffre\", \"url\": \"URL\"}],\n    \"analyse\": \"L'impact sur le portefeuille ou l'emploi du temps de l'indépendant.\",\n    \"angle\": \"Direction pour le rédacteur.\",\n    \"tension\": \"L'émotion brute identifiée.\",\n    \"matiere_insuffisante\": false\n  },\n  \"point_bloquant\": {\n    \"faits\": [{\"texte\": \"L'obstacle sourcé\", \"url\": \"URL\"}],\n    \"analyse\": \"Le non-dit derrière cet obstacle.\",\n    \"angle\": \"Comment retourner la situation.\",\n    \"tension\": \"Le sentiment d'étouffement ou de blocage.\",\n    \"matiere_insuffisante\": false\n  },\n  \"conseil\": {\n    \"faits\": [{\"texte\": \"L'action concrète\", \"url\": \"URL\"}],\n    \"analyse\": \"Le déclic psychologique nécessaire.\",\n    \"angle\": \"L'action immédiate.\",\n    \"tension\": \"Le doute avant de se lancer.\",\n    \"matiere_insuffisante\": false\n  },\n  \"invite\": {\"disponible\": false},\n  \"vie_tinga\": {\"disponible\": false}\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -544,
+        96
+      ],
+      "id": "cd426515-3bb6-47de-9dfd-80e65558c1cb",
+      "name": "Agent IA - Brief Éditorial"
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const raw_brief = items[0].json.output\n                 || items[0].json.text\n                 || JSON.stringify(items[0].json);\n\n  const first_brace = raw_brief.indexOf('{');\n  const last_brace  = raw_brief.lastIndexOf('}');\n\n  if (first_brace === -1 || last_brace === -1) {\n    return [{\n      json: {\n        erreur:  true,\n        message: \"Aucun bloc JSON trouvé dans la sortie de l'Éditorialiste\",\n        raw:     raw_brief\n      }\n    }];\n  }\n\n  const clean_brief = raw_brief.substring(first_brace, last_brace + 1);\n  const brief = JSON.parse(clean_brief);\n\n  const faits_actu     = brief.actu_impact?.faits    || [];\n  const faits_bloquant = brief.point_bloquant?.faits || [];\n  const faits_conseil  = brief.conseil?.faits        || [];\n\n  const actu_ok     = brief.actu_impact    && !brief.actu_impact.matiere_insuffisante    && faits_actu.length > 0;\n  const bloquant_ok = brief.point_bloquant && !brief.point_bloquant.matiere_insuffisante && faits_bloquant.length > 0;\n  const conseil_ok  = brief.conseil        && !brief.conseil.matiere_insuffisante        && faits_conseil.length > 0;\n\n  const avec_invite    = brief.rubriques_optionnelles?.invite?.disponible    === true\n                      || brief.invite?.disponible    === true;\n  const avec_vie_tinga = brief.rubriques_optionnelles?.vie_tinga?.disponible === true\n                      || brief.vie_tinga?.disponible === true;\n\n  const nb_optionnelles = (avec_invite ? 1 : 0) + (avec_vie_tinga ? 1 : 0);\n\n  let longueurs = {};\n  if (nb_optionnelles === 0) {\n    longueurs = { actu_impact: 500, point_bloquant: 500, conseil: 250 };\n  } else if (nb_optionnelles === 1 && avec_vie_tinga) {\n    longueurs = { actu_impact: 500, point_bloquant: 500, conseil: 250, vie_tinga: 150 };\n  } else if (nb_optionnelles === 1 && avec_invite) {\n    longueurs = { actu_impact: 500, point_bloquant: 500, conseil: 250, invite: 500 };\n  } else {\n    longueurs = { actu_impact: 500, point_bloquant: 500, conseil: 250, invite: 500, vie_tinga: 500 };\n  }\n\n  const angle_edito = actu_ok && brief.actu_impact.angle\n    ? brief.actu_impact.angle\n    : \"La réalité des travailleurs indépendants gabonais cette semaine\";\n\n  const ACTION_TEMPLATE = `\nACTION DE LA SEMAINE (OBLIGATOIRE) :\n1 phrase à l'impératif. Délai précis (ex: \"Avant vendredi\"). Coût : zéro franc.\nExemple : \"Avant vendredi, télécharge le formulaire DGI 2026 et vérifie que ton NIF est actif.\"\n`;\n\n  let instructions = `\nRUBRIQUE 0 — ÉDITO DU PRÉSIDENT (TOUJOURS OBLIGATOIRE)\nInspiration : ${angle_edito}\nTension à adresser : ${brief.actu_impact?.tension || 'Le doute du lecteur ce lundi matin'}\nTon : personnel, direct, habité. Pas institutionnel.\nPas de \"chers membres\", pas de formule de politesse.\nLongueur : 100 à 200 mots maximum.\nSignature obligatoire : — Elijah Parfait ONDO OYONO,\nPrésident de TINGA, les travailleurs indépendants du Gabon\n`;\n\n  if (actu_ok) {\n    instructions += `\nRUBRIQUE 1 — ACTU IMPACT (OBLIGATOIRE)\nAngle : ${brief.actu_impact.angle}\nTension : ${brief.actu_impact.tension || ''}\nAnalyse : ${brief.actu_impact.analyse || ''}\nFaits sourcés :\n${faits_actu.map(f => `- ${f.texte} (${f.url})`).join('\\n')}\nLongueur : ${longueurs.actu_impact} mots.\n${ACTION_TEMPLATE}\n`;\n  }\n\n  if (bloquant_ok) {\n    instructions += `\nRUBRIQUE 2 — POINT BLOQUANT (OBLIGATOIRE)\nAngle : ${brief.point_bloquant.angle}\nTension : ${brief.point_bloquant.tension || ''}\nAnalyse : ${brief.point_bloquant.analyse || ''}\nFaits sourcés :\n${faits_bloquant.map(f => `- ${f.texte} (${f.url})`).join('\\n')}\nLongueur : ${longueurs.point_bloquant} mots.\n${ACTION_TEMPLATE}\n`;\n  }\n\n  if (conseil_ok) {\n    instructions += `\nRUBRIQUE 3 — CONSEIL (OBLIGATOIRE)\nAngle : ${brief.conseil.angle}\nTension : ${brief.conseil.tension || ''}\nAnalyse : ${brief.conseil.analyse || ''}\nFaits sourcés :\n${faits_conseil.map(f => `- ${f.texte} (${f.url})`).join('\\n')}\nLongueur : ${longueurs.conseil} mots.\n${ACTION_TEMPLATE}\n`;\n  }\n\n  if (avec_invite) {\n    const inv = brief.invite || brief.rubriques_optionnelles?.invite;\n    instructions += `\nRUBRIQUE 4 — L'INVITÉ DU MOIS (OPTIONNELLE)\nNom : ${inv.nom || ''}\nFonction : ${inv.fonction || ''}\nFrein invisible : ${inv.frein_invisible || ''}\nLevier accélération : ${inv.levier_acceleration || ''}\nLongueur : ${longueurs.invite} mots.\n`;\n  }\n\n  if (avec_vie_tinga) {\n    const ong = brief.vie_tinga || brief.rubriques_optionnelles?.vie_tinga;\n    instructions += `\nRUBRIQUE 5 — VIE DE TINGA (OPTIONNELLE)\nContenu brut : ${ong.contenu || ''}\nLongueur : ${longueurs.vie_tinga} mots.\n`;\n  }\n\n  const rubriques_actives = ['edito'];\n  if (actu_ok)        rubriques_actives.push('actu_impact');\n  if (bloquant_ok)    rubriques_actives.push('point_bloquant');\n  if (conseil_ok)     rubriques_actives.push('conseil');\n  if (avec_invite)    rubriques_actives.push('invite');\n  if (avec_vie_tinga) rubriques_actives.push('vie_tinga');\n\n  const prompt_redacteur = `\nVoici le brief éditorial de la newsletter LIBRE\npour la semaine du ${brief.semaine}.\n\nRUBRIQUES À RÉDIGER OBLIGATOIREMENT :\n${rubriques_actives.join(', ')}\n\nTu rédiges UNIQUEMENT ces rubriques dans la voix\nde TINGA, à partir des faits et analyses fournis.\n\n${instructions}\n\nRAPPEL : Produis un JSON strict.\nAucun texte avant ou après.\n`;\n\n  return [{\n    json: {\n      prompt_redacteur,\n      semaine:            brief.semaine,\n      image_selectionnee: brief.image_selectionnee || null,\n      rubriques_actives,\n      longueurs\n    }\n  }];\n\n} catch(e) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Erreur dans Préparer Prompt Rédaction : \" + e.message,\n      stack:   e.stack\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "e509f6e9-b439-4016-b732-686c8c88278e",
+      "name": "Préparer Prompt Rédaction",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $node[\"Préparer Prompt Rédaction\"].json[\"prompt_redacteur\"] }}",
+        "options": {
+          "systemMessage": "=FORMAT DE SORTIE STRICT : JSON uniquement. Pas de texte avant ou après.\n\nTu es le Rédacteur de LIBRE. Tu écris pour le lundi matin. Le lecteur est fatigué, seul et méfiant. Tu ne lui vends rien, tu nommes sa réalité.\n\nTES RÈGLES D'OR :\n- STRUCTURE : Chaque rubrique commence par la TENSION (ce que le lecteur ressent), s'appuie sur le FAIT PRÉCIS (nom propre, chiffre), et finit par l'OUVERTURE (la perspective).\n- STYLE : Zéro adjectif inutile. Pas de \"crucial\", \"important\", \"dynamique\". Verbes d'action.\n- ANCRAGE : Si le brief mentionne une institution (ex: la CNAMGS), elle doit figurer dans ton texte.\n- INTERDIT : Ne commence jamais par une généralité. Pas de conclusion. Pas de \"Chers membres\".\n- ACTION DE LA SEMAINE : Chaque rubrique obligatoire (actu_impact, point_bloquant, conseil) doit avoir un champ action_semaine : 1 phrase à l'impératif, délai précis, coût zéro franc.\n\nTON : Un pair expérimenté, sec mais bienveillant.\n\nSTRUCTURE DU JSON :\n{\n  \"semaine\": \"YYYY-MM-DD\",\n  \"rubriques\": {\n    \"edito\":         {\"titre\": \"...\", \"corps\": \"...\", \"signature\": \"— Elijah Parfait ONDO OYONO, Président de TINGA\"},\n    \"actu_impact\":   {\"titre\": \"...\", \"corps\": \"...\", \"action_semaine\": \"Avant [délai], [verbe + détail précis].\"},\n    \"point_bloquant\":{\"titre\": \"...\", \"corps\": \"...\", \"action_semaine\": \"Avant [délai], [verbe + détail précis].\"},\n    \"conseil\":       {\"titre\": \"...\", \"corps\": \"...\", \"action_semaine\": \"Avant [délai], [verbe + détail précis].\"},\n    \"invite\":        {\"titre\": \"...\", \"nom\": \"...\", \"corps\": \"...\"},\n    \"vie_tinga\":     {\"titre\": \"...\", \"corps\": \"...\"}\n  }\n}",
+          "batching": {
+            "batchSize": 1,
+            "delayBetweenBatches": 4000
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -32,
+        96
+      ],
+      "id": "acd7e6ce-b5c3-454c-a31b-f6471ce88114",
+      "name": "Agent IA - Rédaction Newsletter"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = items[0].json.output\n        || items[0].json.text\n        || items[0].json.message?.content\n        || JSON.stringify(items[0].json);\n\nconst first_brace = raw.indexOf('{');\nconst last_brace  = raw.lastIndexOf('}');\n\nif (first_brace === -1 || last_brace === -1) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Aucun bloc JSON trouvé dans la sortie du Rédacteur\",\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw.substring(first_brace, last_brace + 1));\n} catch(e) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"JSON du Rédacteur irréparable : \" + e.message,\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nconst rubriques = parsed.rubriques || {};\n\nif (!rubriques.edito?.corps) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Édito manquant ou vide — rubrique obligatoire\",\n      raw,\n      semaine: parsed.semaine || null\n    }\n  }];\n}\n\n// Récupération depuis les nœuds amont (fix : items[0] ne porte pas ces données)\nconst prep              = $('Préparer Prompt Rédaction').first().json;\nconst rubriques_actives = prep.rubriques_actives || [];\nconst image_selectionnee = $('Sélection Image Fiable').first().json.image_validee\n                        || prep.image_selectionnee\n                        || null;\n\nconst avertissements = [];\nfor (const r of ['actu_impact', 'point_bloquant', 'conseil']) {\n  if (rubriques_actives.includes(r) && !rubriques[r]?.corps) {\n    avertissements.push(`${r} attendu mais absent`);\n  }\n}\n\nreturn [{\n  json: {\n    erreur:          false,\n    avertissements:  avertissements.length > 0 ? avertissements : null,\n    semaine:         parsed.semaine,\n    image_selectionnee,\n    rubriques_actives,\n    rubriques:       parsed.rubriques\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        96
+      ],
+      "id": "72b8964f-7a81-4a05-8ea4-fbf1ac24fd80",
+      "name": "Correction du JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c044fa5a-52ac-4af0-8ae4-744beb38141e",
+              "leftValue": "={{ $json.erreur }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        96
+      ],
+      "id": "a2d22aef-538a-4d5a-a7a9-9efcfa6ce097",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LIBRE — Nœud \"Générer HTML Newsletter\" v2.0\n// Design éditorial premium TINGA — CSS inline email-safe\n\nconst data          = items[0].json;\nconst r             = data.rubriques;\nconst image_header  = data.image_selectionnee || null;\n\n// Placeholders configurables\nconst PHOTO_PRESIDENT  = 'PHOTO_PRESIDENT_URL';\nconst TALLY_LINK       = 'TALLY_FEEDBACK_URL';\nconst UNSUBSCRIBE_LINK = 'UNSUBSCRIBE_URL';\nconst MEMBRE_COUNT     = '847';\n\nif (!r || !r.edito) {\n  throw new Error('Données rubriques manquantes ou malformées');\n}\n\n// Numéro de newsletter (N°001 = semaine du 2026-01-05)\nconst NEWSLETTER_START  = new Date('2026-01-05');\nconst current_date      = new Date(data.semaine || new Date());\nconst weeks_elapsed     = Math.max(0, Math.floor((current_date - NEWSLETTER_START) / (7 * 24 * 60 * 60 * 1000)));\nconst numero            = String(weeks_elapsed + 1).padStart(3, '0');\n\n// Date formatée en français\nconst date_obj      = new Date(data.semaine || new Date());\nconst date_formatee = date_obj.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });\n\n// Pull quote : première phrase substantielle de l'édito\nconst pq_match  = (r.edito.corps || '').match(/[^.!?\\n]{20,}[.!?]/);\nconst pull_quote = pq_match ? pq_match[0].trim() : '';\n\n// ============================================================\n// RUBRIQUE BUILDER — fond coloré + badge + action_semaine\n// ============================================================\nfunction rubrique(couleur_accent, bg_color, label_badge, titre, corps, action_semaine) {\n  const action_html = action_semaine ? `\n        <tr>\n          <td style=\"padding-top: 16px;\">\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n              <tr>\n                <td style=\"\n                  background-color: #FDFCFB;\n                  border-left: 3px solid ${couleur_accent};\n                  padding: 10px 14px;\n                  font-family: 'Courier New', Courier, monospace;\n                  font-size: 12px;\n                  color: #1A1A1A;\n                  line-height: 1.6;\n                \">&#8594; ${action_semaine}</td>\n              </tr>\n            </table>\n          </td>\n        </tr>` : '';\n\n  return `\n  <tr>\n    <td style=\"background-color: ${bg_color}; padding: 24px 32px 28px 32px;\">\n      <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n        <tr>\n          <td style=\"padding-bottom: 10px;\">\n            <span style=\"\n              display: inline-block;\n              background-color: ${couleur_accent};\n              color: #FFFFFF;\n              font-family: 'Courier New', Courier, monospace;\n              font-size: 10px;\n              font-weight: 700;\n              letter-spacing: 2px;\n              text-transform: uppercase;\n              padding: 4px 10px;\n              border-radius: 2px;\n            \">${label_badge}</span>\n          </td>\n        </tr>\n        <tr>\n          <td style=\"\n            font-family: Georgia, 'Times New Roman', serif;\n            font-size: 18px;\n            font-weight: 700;\n            color: #1A1A1A;\n            line-height: 1.3;\n            padding-bottom: 10px;\n          \">${titre || ''}</td>\n        </tr>\n        <tr>\n          <td style=\"\n            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n            font-size: 15px;\n            color: #4A4A4A;\n            line-height: 1.75;\n          \">${corps || ''}</td>\n        </tr>\n        ${action_html}\n      </table>\n    </td>\n  </tr>\n  <tr>\n    <td style=\"padding: 0;\"><hr style=\"border: none; border-top: 1px solid #E8E2D9; margin: 0;\" /></td>\n  </tr>`;\n}\n\n// Rubriques dynamiques avec palettes distinctes\nlet rubriques_html = '';\nif (r.actu_impact)                 rubriques_html += rubrique('#1B4332', '#EDF5F0', 'Actualité impact',    r.actu_impact.titre,    r.actu_impact.corps,    r.actu_impact.action_semaine);\nif (r.point_bloquant)              rubriques_html += rubrique('#7C2D12', '#FDF0EC', 'Point bloquant',      r.point_bloquant.titre, r.point_bloquant.corps, r.point_bloquant.action_semaine);\nif (r.conseil)                     rubriques_html += rubrique('#1C3A6E', '#EEF2F9', 'Conseil de la semaine', r.conseil.titre,      r.conseil.corps,        r.conseil.action_semaine);\nif (r.invite   && r.invite.corps)  rubriques_html += rubrique('#5B2D8E', '#F5EFF9', \"L'invité du mois\",   r.invite.titre,         r.invite.corps,         null);\nif (r.vie_tinga && r.vie_tinga.corps) rubriques_html += rubrique('#C9943A', '#FDF6E9', 'Vie de TINGA',    r.vie_tinga.titre,      r.vie_tinga.corps,      null);\n\n// Image header sécurisée\nconst image_html = image_header\n  ? `<tr><td style=\"padding: 0; line-height: 0; font-size: 0;\">\n      <img src=\"${image_header}\" alt=\"Image de la semaine\" width=\"600\"\n           style=\"display: block; width: 100%; max-width: 600px; height: 220px; object-fit: cover;\" />\n    </td></tr>`\n  : '';\n\n// Pull quote HTML\nconst pull_quote_html = pull_quote\n  ? `<tr>\n      <td style=\"padding: 20px 32px 0 32px;\">\n        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n          <tr>\n            <td style=\"\n              border-left: 4px solid #C9943A;\n              padding: 8px 0 8px 16px;\n              font-family: Georgia, 'Times New Roman', serif;\n              font-size: 19px;\n              font-style: italic;\n              color: #2A2A2A;\n              line-height: 1.5;\n            \">${pull_quote}</td>\n          </tr>\n        </table>\n      </td>\n    </tr>`\n  : '';\n\nconst html_body = `<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n<meta charset=\"UTF-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n<title>LIBRE N°${numero} — La Lettre de TINGA</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #F0EBE3; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\">\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color: #F0EBE3; padding: 32px 0;\">\n  <tr>\n    <td align=\"center\">\n\n      <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width: 600px; background-color: #FFFFFF;\">\n\n        <!-- BANDE OR -->\n        <tr>\n          <td style=\"background-color: #C9943A; padding: 6px 32px;\">\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n              <tr>\n                <td style=\"font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF;\">ONG TINGA — Les Travailleurs Indépendants du Gabon</td>\n                <td align=\"right\" style=\"font-family: 'Courier New', Courier, monospace; font-size: 10px; color: rgba(255,255,255,0.85); letter-spacing: 1px; white-space: nowrap;\">${date_formatee}</td>\n              </tr>\n            </table>\n          </td>\n        </tr>\n\n        <!-- MASTHEAD -->\n        <tr>\n          <td style=\"background-color: #1B4332; padding: 40px 32px 32px 32px; text-align: center;\">\n            <p style=\"margin: 0 0 4px 0; font-family: 'Courier New', Courier, monospace; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: rgba(201,148,58,0.85);\">N°${numero} &middot; Semaine du ${date_formatee}</p>\n            <p style=\"margin: 0 0 8px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 60px; font-weight: 700; letter-spacing: -2px; color: #F7F3ED; line-height: 1;\">LIBRE</p>\n            <p style=\"margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #C9943A;\">La lettre des bâtisseurs du Gabon</p>\n          </td>\n        </tr>\n\n        <!-- IMAGE HEADER -->\n        ${image_html}\n\n        <!-- ÉDITO DU PRÉSIDENT -->\n        <tr>\n          <td style=\"background-color: #F7F3ED; padding: 32px 32px 28px 32px;\">\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n              <tr>\n                <td style=\"padding-bottom: 16px;\">\n                  <p style=\"margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #C9943A;\">Édito du Président</p>\n                </td>\n              </tr>\n              <tr>\n                <td>\n                  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n                    <tr>\n                      <td width=\"60\" valign=\"top\" style=\"padding-right: 14px;\">\n                        <img src=\"${PHOTO_PRESIDENT}\" alt=\"Elijah Parfait ONDO OYONO\" width=\"48\" height=\"48\"\n                             style=\"display: block; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #C9943A;\" />\n                      </td>\n                      <td valign=\"top\">\n                        <p style=\"margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 18px; font-weight: 700; color: #1A1A1A; line-height: 1.3;\">${r.edito.titre || ''}</p>\n                      </td>\n                    </tr>\n                  </table>\n                </td>\n              </tr>\n              ${pull_quote_html}\n              <tr>\n                <td style=\"padding-top: 18px; border-left: 3px solid #C9943A; padding-left: 16px;\">\n                  <p style=\"margin: 0 0 14px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 15px; color: #4A4A4A; line-height: 1.8; font-style: italic;\">${r.edito.corps || ''}</p>\n                  <p style=\"margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #1B4332; font-weight: 700; letter-spacing: 0.5px;\">${r.edito.signature || '— Elijah Parfait ONDO OYONO, Président de TINGA'}</p>\n                </td>\n              </tr>\n            </table>\n          </td>\n        </tr>\n\n        <!-- SÉPARATEUR VERT -->\n        <tr>\n          <td style=\"padding: 0;\"><hr style=\"border: none; border-top: 2px solid #1B4332; margin: 0;\" /></td>\n        </tr>\n\n        <!-- RUBRIQUES DYNAMIQUES -->\n        ${rubriques_html}\n\n        <!-- BLOC FEEDBACK TALLY -->\n        <tr>\n          <td style=\"background-color: #F7F3ED; padding: 24px 32px; text-align: center;\">\n            <p style=\"margin: 0 0 10px 0; font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #1B4332;\">Cette semaine, ton défi principal c'est :</p>\n            <p style=\"margin: 0 0 12px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #4A4A4A; line-height: 2;\">\n              <a href=\"${TALLY_LINK}?r=clients\" style=\"color: #1B4332; text-decoration: underline; margin: 0 6px;\">Trouver des clients</a> &middot;\n              <a href=\"${TALLY_LINK}?r=tresorerie\" style=\"color: #1B4332; text-decoration: underline; margin: 0 6px;\">Gérer la trésorerie</a> &middot;\n              <a href=\"${TALLY_LINK}?r=fiscalite\" style=\"color: #1B4332; text-decoration: underline; margin: 0 6px;\">Comprendre la fiscalité</a>\n            </p>\n            <p style=\"margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #9A9A9A;\">(1 clic &middot; anonyme &middot; oriente la prochaine édition)</p>\n          </td>\n        </tr>\n\n        <!-- FOOTER -->\n        <tr>\n          <td style=\"background-color: #1B4332; padding: 32px 32px 24px 32px; text-align: center;\">\n            <p style=\"margin: 0 0 4px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; color: #C9943A; letter-spacing: 1px;\">TINGA</p>\n            <p style=\"margin: 0 0 16px 0; font-family: 'Courier New', Courier, monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(247,243,237,0.5);\">Trouver sa voie pour réussir</p>\n            <p style=\"margin: 0 0 14px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: rgba(247,243,237,0.85); font-style: italic;\">Rejoins les ${MEMBRE_COUNT} indépendants qui lisent LIBRE chaque lundi.</p>\n            <p style=\"margin: 0 0 20px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; color: rgba(247,243,237,0.45); line-height: 1.6;\">ONG TINGA — Angondjé, Carrefour Jiji, Libreville, Gabon<br />Récépissé N° 000691</p>\n            <p style=\"margin: 0 0 16px 0;\">\n              <a href=\"https://facebook.com/ongtinga\"          style=\"color: #C9943A; text-decoration: none; font-family: 'Courier New', Courier, monospace; font-size: 10px; letter-spacing: 1px; margin: 0 8px;\">Facebook</a>\n              <a href=\"https://linkedin.com/company/ongtinga\"  style=\"color: #C9943A; text-decoration: none; font-family: 'Courier New', Courier, monospace; font-size: 10px; letter-spacing: 1px; margin: 0 8px;\">LinkedIn</a>\n              <a href=\"https://ongtinga.org\"                   style=\"color: #C9943A; text-decoration: none; font-family: 'Courier New', Courier, monospace; font-size: 10px; letter-spacing: 1px; margin: 0 8px;\">Site web</a>\n            </p>\n            <p style=\"margin: 0 0 8px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: rgba(247,243,237,0.3);\">&copy; 2026 ONG TINGA &middot; Tous droits réservés</p>\n            <p style=\"margin: 0;\">\n              <a href=\"${UNSUBSCRIBE_LINK}\" style=\"color: rgba(247,243,237,0.35); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; text-decoration: underline;\">Se désinscrire</a>\n            </p>\n          </td>\n        </tr>\n\n      </table>\n\n    </td>\n  </tr>\n</table>\n\n</body>\n</html>`;\n\nconst sujet_email = `LIBRE N°${numero} · ${date_formatee} · ${r.edito.titre || 'La lettre des bâtisseurs du Gabon'}`;\n\nreturn [{\n  json: {\n    html_body,\n    subject_email: sujet_email,\n    semaine:       data.semaine,\n    image_selectionnee: image_header\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        80
+      ],
+      "id": "137c80ee-ed37-43fb-82f3-4495412d3a92",
+      "name": "Générer HTML Newsletter",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "sendTo": "kodbart@gmail.com",
+        "subject": "={{ $json.subject_email }}",
+        "message": "={{ $json.html_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        80
+      ],
+      "id": "62f026c6-2fb1-405b-97c8-37094a17c2a4",
+      "name": "Send a message",
+      "webhookId": "487720dd-42e7-4872-ba4b-b30a4d15c010",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pLxdjO9AlsoAOgXR",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "articles_traites",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ 'newsletter-' + $node['Correction du JSON'].json.semaine }}"
+            },
+            {
+              "fieldId": "titre",
+              "fieldValue": "={{ $node['Générer HTML Newsletter'].json.subject_email }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "LIBRE"
+            },
+            {
+              "fieldId": "resume",
+              "fieldValue": "={{ $node['Correction du JSON'].json.semaine }}"
+            },
+            {
+              "fieldId": "date_collecte",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        80
+      ],
+      "id": "df052096-7246-49f9-a3df-e76697d7cf7a",
+      "name": "Save to Database",
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgQaNipmMDt1dnkB",
+          "name": "LE BURÖ"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "TELEGRAM_CHAT_ID_ICI",
+        "text": "=⚠️ LIBRE — Erreur JSON détectée\nSemaine : {{ $json.semaine }}\nMotif : {{ $json.message }}\n\nContenu brut :\n{{ ($json.raw || '').substring(0, 1000) }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        192
+      ],
+      "id": "d1f7458e-563c-4969-96e8-849bbdc1d614",
+      "name": "Send a text message",
+      "webhookId": "42545d10-cc71-4e45-825c-0d33c4a8c3ab",
+      "credentials": {
+        "telegramApi": {
+          "id": "rgtTq9hA0xOk54CO",
+          "name": "Telegram TINGA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet script = input.output || input.text || '';\n\nif (!script) throw new Error('Champ texte introuvable : ' + JSON.stringify(Object.keys(input)));\n\n// NIVEAU 1 — Dictionnaire permanent acronymes gabonais\n// FMI dédoublonné (bug corrigé)\nconst sigles = [\n  'ANBG', 'PME', 'VPN', 'PIB', 'FMI', 'BEAC',\n  'RDC', 'ONU', 'TVA', 'BEI', 'CNSS',\n  'PDG', 'RPG', 'CTG', 'BGD'\n];\n\nconst mots = [\n  ['SEEG',   'esøʒe'],\n  ['CNAMGS', 'knamʒes'],\n  ['HAC',    'ak'],\n  ['OPRAG',  'ɔpʁaɡ'],\n  ['GSEZ',   'ɡsɛz'],\n  ['GABON',  'ɡabɔ̃']\n];\n\n// NIVEAU 2 — Acronymes dynamiques détectés par l'agent\nlet acronymesMot   = [];\nlet acronymesSigle = [];\n\nconst motMatch   = script.match(/ACRONYMES_MOT:\\s*([^\\n]+)/);\nconst sigleMatch = script.match(/ACRONYMES_SIGLE:\\s*([^\\n]+)/);\n\nif (motMatch)   acronymesMot   = motMatch[1].split(',').map(a => a.trim()).filter(Boolean);\nif (sigleMatch) acronymesSigle = sigleMatch[1].split(',').map(a => a.trim()).filter(Boolean);\n\nscript = script\n  .replace(/ACRONYMES_MOT:[^\\n]+\\n?/g, '')\n  .replace(/ACRONYMES_SIGLE:[^\\n]+\\n?/g, '')\n  .trim();\n\n// Nettoyage\nscript = script\n  .replace(/[\\u{1F000}-\\u{1FFFF}]/gu, '')\n  .replace(/1️⃣|2️⃣|3️⃣|4️⃣|5️⃣/g, '')\n  .replace(/^\\d+\\.\\s/gm, '')\n  .replace(/\\bFCFA\\b/g, 'francs CFA')\n  .replace(/PRI\\$ME/g, 'Prime');\n\n// Application acronymes permanents\nsigles.forEach(s => {\n  const regex = new RegExp(`\\\\b${s}\\\\b`, 'g');\n  script = script.replace(regex, `<say-as interpret-as=\"characters\">${s}</say-as>`);\n});\n\nmots.forEach(([acronyme, phoneme]) => {\n  const regex = new RegExp(`\\\\b${acronyme}\\\\b`, 'g');\n  script = script.replace(regex, `<phoneme alphabet=\"ipa\" ph=\"${phoneme}\">${acronyme}</phoneme>`);\n});\n\n// Application acronymes dynamiques\nacronymesSigle.forEach(s => {\n  if (!sigles.includes(s)) {\n    const regex = new RegExp(`\\\\b${s}\\\\b`, 'g');\n    script = script.replace(regex, `<say-as interpret-as=\"characters\">${s}</say-as>`);\n  }\n});\n\nacronymesMot.forEach(s => {\n  if (!mots.find(m => m[0] === s)) {\n    const regex = new RegExp(`\\\\b${s}\\\\b`, 'g');\n    script = script.replace(regex, `<say-as interpret-as=\"spell-out\">${s}</say-as>`);\n  }\n});\n\n// Pauses structurelles\nscript = script\n  .replace(/\\[Pause\\]/g, '<break time=\"300ms\"/>')\n  .replace(/\\n\\n/g, '<break time=\"300ms\"/>')\n  .replace(/\\n/g, ' ');\n\nscript = script.replace(\n  /^(.{10,60}\\.)\\s/,\n  '$1<break time=\"400ms\"/> '\n);\n\nconst ssml = `<speak>${script}</speak>`;\n\nreturn [{ json: { text: ssml } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -144
+      ],
+      "id": "93bb0792-4d0b-4fbc-8283-4c9a2f477fea",
+      "name": "Prepare Speechify"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.speechify.ai/v1/audio/speech",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SPEECHIFY_API_KEY_ICI"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "voice_id",
+              "value": "maxime"
+            },
+            {
+              "name": "audio_format",
+              "value": "mp3"
+            },
+            {
+              "name": "model",
+              "value": "simba-multilingual"
+            },
+            {
+              "name": "language",
+              "value": "fr-FR"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1024,
+        -144
+      ],
+      "id": "759dd568-73ad-4c6c-bd16-7b0bae9f8d4b",
+      "name": "SPEECHIFY"
+    },
+    {
+      "parameters": {
+        "jsCode": "const audioData = $input.first().json.audio_data;\nconst buffer    = Buffer.from(audioData, 'base64');\n\nreturn [{\n  binary: {\n    data: await this.helpers.prepareBinaryData(buffer, 'newsletter.mp3', 'audio/mpeg')\n  },\n  json: {}\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -144
+      ],
+      "id": "8b34c6af-ed71-44a0-bec7-8791324db070",
+      "name": "Audio Output"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "maxTokensToSample": 8000,
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        352
+      ],
+      "id": "2f8e09ad-67fb-4745-b154-2c52230deff6",
+      "name": "Groq Edito",
+      "credentials": {
+        "groqApi": {
+          "id": "r2Ij0yqdN2dpjWcQ",
+          "name": "Groq TINGA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-sonnet-4",
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        336
+      ],
+      "id": "3c070ae1-a76b-406d-9481-ae3f3c6da78b",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "awZ7N9zLM2eDQryI",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Tavily Fiscalité",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tavily Crédit",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tavily Marché",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Coaching",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tally Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ONG Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Fiscalité": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Crédit": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Tavily Marché": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Coaching": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Tally Check": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "ONG Check": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "normalisation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalisation": {
+      "main": [
+        [
+          {
+            "node": "Sélection Image Fiable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sélection Image Fiable": {
+      "main": [
+        [
+          {
+            "node": "Extraction Faits Chiffrés",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Faits Chiffrés": {
+      "main": [
+        [
+          {
+            "node": "Agent IA - Brief Éditorial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent IA - Brief Éditorial": {
+      "main": [
+        [
+          {
+            "node": "Préparer Prompt Rédaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Prompt Rédaction": {
+      "main": [
+        [
+          {
+            "node": "Agent IA - Rédaction Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent IA - Rédaction Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Correction du JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correction du JSON": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Générer HTML Newsletter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Speechify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Générer HTML Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Save to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Speechify": {
+      "main": [
+        [
+          {
+            "node": "SPEECHIFY",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SPEECHIFY": {
+      "main": [
+        [
+          {
+            "node": "Audio Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Edito": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent IA - Brief Éditorial",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent IA - Rédaction Newsletter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "aed6ff7b-ae55-401e-beb8-4b9d2aaf95b3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4f6e096e4f388cc53079b9f28db5969c578c760fd94221fe1b8fbaa6e035a5"
+  },
+  "id": "8AxFOHVYY9zu4Phu",
+  "tags": []
+}
