@@ -134,6 +134,25 @@ for (const img_brut of candidates) {
 
 return [{ json: { ...$input.first().json, image_validee } }];"""
 
+CODE_EXTRAIRE_URL = r"""// Construit l'URL publique Supabase si l'upload a réussi,
+// sinon repasse sur l'URL Tavily originale sans planter le workflow.
+const upload_result = $input.first().json;
+const original      = $('Sélection Image Fiable').first().json;
+const semaine       = original.semaine || new Date().toISOString().split('T')[0];
+
+const SUPABASE_PROJECT_ID = 'SUPABASE_PROJECT_ID';
+const BUCKET              = 'libre-newsletter';
+const filename            = `libre-${semaine}.jpg`;
+
+// Supabase Storage renvoie {"Key": "bucket/filename"} en cas de succès
+const upload_ok = upload_result && (upload_result.Key !== undefined || upload_result.Id !== undefined);
+
+const image_validee = upload_ok
+  ? `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${BUCKET}/${filename}`
+  : (original.image_validee || 'SUPABASE_CDN_BANNIERE_URL_ICI');
+
+return [{ json: { ...original, image_validee } }];"""
+
 CODE_EXTRACTION_FAITS = r"""// Extrait chiffres, montants, institutions et dates des sources Tavily
 // pour forcer l'agent Brief à produire des ancres réelles.
 const data     = $input.first().json;
@@ -388,7 +407,7 @@ if (!rubriques.edito?.corps) {
 // Récupération depuis les nœuds amont (fix : items[0] ne porte pas ces données)
 const prep              = $('Préparer Prompt Rédaction').first().json;
 const rubriques_actives = prep.rubriques_actives || [];
-const image_selectionnee = $('Sélection Image Fiable').first().json.image_validee
+const image_selectionnee = $('Extraire URL Publique').first().json.image_validee
                         || prep.image_selectionnee
                         || null;
 
@@ -1105,6 +1124,67 @@ workflow = {
         },
 
         # --------------------------------------------------
+        # TÉLÉCHARGER IMAGE — GET binaire depuis URL Tavily
+        # --------------------------------------------------
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $json.image_validee }}",
+                "options": {
+                    "response": {
+                        "response": {"responseFormat": "file"}
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [-700, -240],
+            "id": "a9b8c7d6-e5f4-3210-abcd-111222333444",
+            "name": "Télécharger Image",
+            "onError": "continueRegularOutput"
+        },
+
+        # --------------------------------------------------
+        # UPLOAD SUPABASE STORAGE — POST binaire vers le bucket
+        # --------------------------------------------------
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://SUPABASE_PROJECT_ID.supabase.co/storage/v1/object/libre-newsletter/libre-{{ $('Sélection Image Fiable').first().json.semaine }}.jpg",
+                "sendHeaders": True,
+                "headerParameters": {
+                    "parameters": [
+                        {"name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"},
+                        {"name": "Content-Type",  "value": "image/jpeg"},
+                        {"name": "x-upsert",      "value": "true"}
+                    ]
+                },
+                "sendBody": True,
+                "contentType": "binaryData",
+                "inputDataFieldName": "data",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [-500, -240],
+            "id": "b8c7d6e5-f4a3-2109-bcde-222333444555",
+            "name": "Upload Supabase Storage",
+            "onError": "continueRegularOutput"
+        },
+
+        # --------------------------------------------------
+        # EXTRAIRE URL PUBLIQUE — construit l'URL Supabase finale
+        # --------------------------------------------------
+        {
+            "parameters": {"jsCode": CODE_EXTRAIRE_URL},
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [-300, -240],
+            "id": "c7d6e5f4-a3b2-1098-cdef-333444555666",
+            "name": "Extraire URL Publique"
+        },
+
+        # --------------------------------------------------
         # EXTRACTION FAITS CHIFFRÉS (nouveau nœud)
         # --------------------------------------------------
         {
@@ -1418,6 +1498,18 @@ workflow = {
         },
 
         "Sélection Image Fiable": {
+            "main": [[{"node": "Télécharger Image", "type": "main", "index": 0}]]
+        },
+
+        "Télécharger Image": {
+            "main": [[{"node": "Upload Supabase Storage", "type": "main", "index": 0}]]
+        },
+
+        "Upload Supabase Storage": {
+            "main": [[{"node": "Extraire URL Publique", "type": "main", "index": 0}]]
+        },
+
+        "Extraire URL Publique": {
             "main": [[{"node": "Extraction Faits Chiffrés", "type": "main", "index": 0}]]
         },
 

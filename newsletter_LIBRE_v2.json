@@ -262,6 +262,77 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "={{ $json.image_validee }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -700,
+        -240
+      ],
+      "id": "a9b8c7d6-e5f4-3210-abcd-111222333444",
+      "name": "Télécharger Image",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://SUPABASE_PROJECT_ID.supabase.co/storage/v1/object/libre-newsletter/libre-{{ $('Sélection Image Fiable').first().json.semaine }}.jpg",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "image/jpeg"
+            },
+            {
+              "name": "x-upsert",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -500,
+        -240
+      ],
+      "id": "b8c7d6e5-f4a3-2109-bcde-222333444555",
+      "name": "Upload Supabase Storage",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construit l'URL publique Supabase si l'upload a réussi,\n// sinon repasse sur l'URL Tavily originale sans planter le workflow.\nconst upload_result = $input.first().json;\nconst original      = $('Sélection Image Fiable').first().json;\nconst semaine       = original.semaine || new Date().toISOString().split('T')[0];\n\nconst SUPABASE_PROJECT_ID = 'SUPABASE_PROJECT_ID';\nconst BUCKET              = 'libre-newsletter';\nconst filename            = `libre-${semaine}.jpg`;\n\n// Supabase Storage renvoie {\"Key\": \"bucket/filename\"} en cas de succès\nconst upload_ok = upload_result && (upload_result.Key !== undefined || upload_result.Id !== undefined);\n\nconst image_validee = upload_ok\n  ? `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${BUCKET}/${filename}`\n  : (original.image_validee || 'SUPABASE_CDN_BANNIERE_URL_ICI');\n\nreturn [{ json: { ...original, image_validee } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        -240
+      ],
+      "id": "c7d6e5f4-a3b2-1098-cdef-333444555666",
+      "name": "Extraire URL Publique"
+    },
+    {
+      "parameters": {
         "jsCode": "// Extrait chiffres, montants, institutions et dates des sources Tavily\n// pour forcer l'agent Brief à produire des ancres réelles.\nconst data     = $input.first().json;\nconst all_text = JSON.stringify(data.sources || {});\n\nconst unique = arr => [...new Set(arr)];\n\nconst montants = unique(\n  [...all_text.matchAll(/(\\d[\\d\\s]{0,8}(?:[ \\s]000)?\\s*(?:FCFA|francs?\\s+CFA|F\\.?CFA))/gi)]\n    .map(m => m[1].replace(/\\s+/g, ' ').trim())\n).slice(0, 8);\n\nconst pourcentages = unique(\n  [...all_text.matchAll(/(\\d+[,.]?\\d*\\s*%)/g)]\n    .map(m => m[1].trim())\n).slice(0, 8);\n\nconst dates_detectees = unique(\n  [...all_text.matchAll(/\\b(\\d{1,2}(?:er)?\\s+(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\\s+\\d{4})\\b/gi)]\n    .map(m => m[1])\n).slice(0, 5);\n\nconst institutions = unique(\n  [...all_text.matchAll(/\\b(BGFIBank|BCEG|BEAC|CNAMGS|DGI|CNSS|SEEG|OPRAG|GSEZ|Okoum[eé]\\s+Capital|Gabon\\s+Oil\\s+Company|ANGTI|ANPI|AGASA)\\b/g)]\n    .map(m => m[1])\n);\n\nreturn [{\n  json: {\n    ...data,\n    faits_extraits: { montants, pourcentages, dates_detectees, institutions }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
@@ -327,7 +398,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let raw = items[0].json.output\n        || items[0].json.text\n        || items[0].json.message?.content\n        || JSON.stringify(items[0].json);\n\nconst first_brace = raw.indexOf('{');\nconst last_brace  = raw.lastIndexOf('}');\n\nif (first_brace === -1 || last_brace === -1) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Aucun bloc JSON trouvé dans la sortie du Rédacteur\",\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw.substring(first_brace, last_brace + 1));\n} catch(e) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"JSON du Rédacteur irréparable : \" + e.message,\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nconst rubriques = parsed.rubriques || {};\n\nif (!rubriques.edito?.corps) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Édito manquant ou vide — rubrique obligatoire\",\n      raw,\n      semaine: parsed.semaine || null\n    }\n  }];\n}\n\n// Récupération depuis les nœuds amont (fix : items[0] ne porte pas ces données)\nconst prep              = $('Préparer Prompt Rédaction').first().json;\nconst rubriques_actives = prep.rubriques_actives || [];\nconst image_selectionnee = $('Sélection Image Fiable').first().json.image_validee\n                        || prep.image_selectionnee\n                        || null;\n\nconst avertissements = [];\nfor (const r of ['actu_impact', 'point_bloquant', 'conseil']) {\n  if (rubriques_actives.includes(r) && !rubriques[r]?.corps) {\n    avertissements.push(`${r} attendu mais absent`);\n  }\n}\n\nreturn [{\n  json: {\n    erreur:          false,\n    avertissements:  avertissements.length > 0 ? avertissements : null,\n    semaine:         parsed.semaine,\n    image_selectionnee,\n    rubriques_actives,\n    rubriques:       parsed.rubriques\n  }\n}];"
+        "jsCode": "let raw = items[0].json.output\n        || items[0].json.text\n        || items[0].json.message?.content\n        || JSON.stringify(items[0].json);\n\nconst first_brace = raw.indexOf('{');\nconst last_brace  = raw.lastIndexOf('}');\n\nif (first_brace === -1 || last_brace === -1) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Aucun bloc JSON trouvé dans la sortie du Rédacteur\",\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw.substring(first_brace, last_brace + 1));\n} catch(e) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"JSON du Rédacteur irréparable : \" + e.message,\n      raw,\n      semaine: items[0].json.semaine || null\n    }\n  }];\n}\n\nconst rubriques = parsed.rubriques || {};\n\nif (!rubriques.edito?.corps) {\n  return [{\n    json: {\n      erreur:  true,\n      message: \"Édito manquant ou vide — rubrique obligatoire\",\n      raw,\n      semaine: parsed.semaine || null\n    }\n  }];\n}\n\n// Récupération depuis les nœuds amont (fix : items[0] ne porte pas ces données)\nconst prep              = $('Préparer Prompt Rédaction').first().json;\nconst rubriques_actives = prep.rubriques_actives || [];\nconst image_selectionnee = $('Extraire URL Publique').first().json.image_validee\n                        || prep.image_selectionnee\n                        || null;\n\nconst avertissements = [];\nfor (const r of ['actu_impact', 'point_bloquant', 'conseil']) {\n  if (rubriques_actives.includes(r) && !rubriques[r]?.corps) {\n    avertissements.push(`${r} attendu mais absent`);\n  }\n}\n\nreturn [{\n  json: {\n    erreur:          false,\n    avertissements:  avertissements.length > 0 ? avertissements : null,\n    semaine:         parsed.semaine,\n    image_selectionnee,\n    rubriques_actives,\n    rubriques:       parsed.rubriques\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -727,6 +798,39 @@
       ]
     },
     "Sélection Image Fiable": {
+      "main": [
+        [
+          {
+            "node": "Télécharger Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Télécharger Image": {
+      "main": [
+        [
+          {
+            "node": "Upload Supabase Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Supabase Storage": {
+      "main": [
+        [
+          {
+            "node": "Extraire URL Publique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire URL Publique": {
       "main": [
         [
           {
