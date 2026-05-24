@@ -16,7 +16,10 @@
       "name": "Cron — Mardi 05h00 UTC",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [640, 720]
+      "position": [
+        640,
+        720
+      ]
     },
     {
       "parameters": {
@@ -33,8 +36,14 @@
               "name": "Authorization",
               "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"
             },
-            {"name": "Content-Type", "value": "application/json"},
-            {"name": "Prefer", "value": "return=minimal"}
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
         "options": {}
@@ -43,7 +52,10 @@
       "name": "Purge articles anciens",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [864, 720]
+      "position": [
+        864,
+        720
+      ]
     },
     {
       "parameters": {
@@ -56,7 +68,10 @@
       "name": "Lire sources actives",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1088, 720],
+      "position": [
+        1088,
+        720
+      ],
       "credentials": {
         "supabaseApi": {
           "id": "qgQaNipmMDt1dnkB",
@@ -72,7 +87,10 @@
       "name": "Générer semaine_id",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1280, 720]
+      "position": [
+        1280,
+        720
+      ]
     },
     {
       "parameters": {
@@ -83,7 +101,10 @@
       "name": "Split — Une source RSS par item",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1568, 464]
+      "position": [
+        1568,
+        464
+      ]
     },
     {
       "parameters": {
@@ -91,8 +112,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "User-Agent", "value": "CALAO-Newsletter-Bot/1.0"},
-            {"name": "Accept", "value": "application/rss+xml, application/xml, text/xml, */*"}
+            {
+              "name": "User-Agent",
+              "value": "CALAO-Newsletter-Bot/1.0"
+            },
+            {
+              "name": "Accept",
+              "value": "application/rss+xml, application/xml, text/xml, */*"
+            }
           ]
         },
         "options": {
@@ -107,7 +134,10 @@
       "name": "Fetch RSS",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 480],
+      "position": [
+        1760,
+        480
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -118,7 +148,10 @@
       "name": "Code — Parse RSS",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2448, 464]
+      "position": [
+        2448,
+        464
+      ]
     },
     {
       "parameters": {
@@ -128,7 +161,10 @@
       "name": "Code — Gérer erreur HTTP",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2016, 496]
+      "position": [
+        2016,
+        496
+      ]
     },
     {
       "parameters": {
@@ -145,8 +181,14 @@
               "name": "Authorization",
               "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"
             },
-            {"name": "Content-Type", "value": "application/json"},
-            {"name": "Prefer", "value": "return=minimal"}
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
         "sendBody": true,
@@ -158,7 +200,10 @@
       "name": "HTTP — Incrémenter échecs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 496]
+      "position": [
+        2240,
+        496
+      ]
     },
     {
       "parameters": {
@@ -168,7 +213,10 @@
       "name": "Code — Générer requêtes SerpAPI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1552, 976]
+      "position": [
+        1552,
+        976
+      ]
     },
     {
       "parameters": {
@@ -178,7 +226,10 @@
       "name": "Split — Une requête SerpAPI par item",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [2432, 976]
+      "position": [
+        2432,
+        976
+      ]
     },
     {
       "parameters": {
@@ -186,12 +237,30 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {"name": "engine", "value": "google_news"},
-            {"name": "q", "value": "={{ $json.q }}"},
-            {"name": "gl", "value": "fr"},
-            {"name": "hl", "value": "fr"},
-            {"name": "num", "value": "10"},
-            {"name": "api_key", "value": "VOTRE_CLE_SERPAPI"}
+            {
+              "name": "engine",
+              "value": "google_news"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.q }}"
+            },
+            {
+              "name": "gl",
+              "value": "fr"
+            },
+            {
+              "name": "hl",
+              "value": "fr"
+            },
+            {
+              "name": "num",
+              "value": "10"
+            },
+            {
+              "name": "api_key",
+              "value": "VOTRE_CLE_SERPAPI"
+            }
           ]
         },
         "options": {}
@@ -200,7 +269,10 @@
       "name": "HTTP — SerpAPI Google News",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2656, 992],
+      "position": [
+        2656,
+        992
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -211,7 +283,10 @@
       "name": "Code — Normaliser SerpAPI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2880, 992]
+      "position": [
+        2880,
+        992
+      ]
     },
     {
       "parameters": {
@@ -221,7 +296,10 @@
       "name": "Code — Générer requêtes Tavily",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1568, 720]
+      "position": [
+        1568,
+        720
+      ]
     },
     {
       "parameters": {
@@ -231,7 +309,10 @@
       "name": "Split — Une requête Tavily par item",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1776, 720]
+      "position": [
+        1776,
+        720
+      ]
     },
     {
       "parameters": {
@@ -240,7 +321,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "Content-Type", "value": "application/json"}
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -253,7 +337,10 @@
       "name": "HTTP — Tavily Search",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 736],
+      "position": [
+        2000,
+        736
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -264,7 +351,10 @@
       "name": "Code — Normaliser Tavily",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2224, 736]
+      "position": [
+        2224,
+        736
+      ]
     },
     {
       "parameters": {
@@ -274,17 +364,23 @@
       "name": "Code — Dédoublonner",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2720, 704]
+      "position": [
+        2720,
+        704
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// ============================================================\n// CALAO — Bloc 1 — Préparer body pour scoring Haiku\n// Version 3 — limite 50 articles, format body string\n// ============================================================\n\nconst items = $input.all();\n\nconst articlesValides = items.filter(item =>\n  item.json.skip !== true &&\n  item.json.url &&\n  item.json.doublons_hash\n);\n\nif (articlesValides.length === 0) {\n  return [{ json: { skip: true, articles_count: 0, body: null, items_originaux: [] } }];\n}\n\nconst articlesCibles = articlesValides.slice(0, 50);\n\nconst liste = articlesCibles.map(item => ({\n  id:     item.json.doublons_hash,\n  titre:  (item.json.titre || '').substring(0, 100),\n  resume: (item.json.resume || '').substring(0, 150)\n}));\n\nconst systemPrompt = `Tu es un filtre éditorial pour CALAO, newsletter économique destinée aux entrepreneurs d'Afrique francophone.\n\nPour chaque article, attribue un score de pertinence :\n5 = Impact économique direct (investissement, marché, financement, infrastructure)\n4 = Politique publique ou réglementation changeant les règles du jeu\n3 = Opportunité concrète, signal de marché, initiative entrepreneuriale\n2 = Information économique périphérique, contexte régional utile\n1 = Très faible pertinence mais acceptable\n0 = Exclure absolument : gambling, jeux d'argent, faits divers criminels, sport, politique partisane sans dimension économique, religion, météo, people\n\nRÈGLE IMPÉRATIVE : retourner un score pour chaque article soumis.\nRETOURNE UNIQUEMENT un JSON valide sans markdown :\n{\"scores\": [{\"id\": \"identifiant\", \"score\": 3}]}`;\n\nconst userMessage = `Évalue ces ${liste.length} articles :\\n${JSON.stringify(liste)}`;\n\nreturn [{\n  json: {\n    skip: false,\n    articles_count: articlesCibles.length,\n    body: {\n      model: 'anthropic/claude-haiku-4-5',\n      max_tokens: 4000,\n      temperature: 0.1,\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user',   content: userMessage }\n      ]\n    },\n    items_originaux: articlesCibles.map(item => item.json)\n  }\n}];"
+        "jsCode": "// ============================================================\n// CALAO — Bloc 1 — Préparer body pour scoring Haiku\n// Version 3 — limite 50 articles, format body string\n// ============================================================\n\nconst items = $input.all();\n\nconst articlesValides = items.filter(item =>\n  item.json.skip !== true &&\n  item.json.url &&\n  item.json.doublons_hash\n);\n\nif (articlesValides.length === 0) {\n  return [{ json: { skip: true, articles_count: 0, body: null, items_originaux: [] } }];\n}\n\nconst articlesCibles = articlesValides.slice(0, 50);\n\nconst liste = articlesCibles.map(item => ({\n  id:     item.json.doublons_hash,\n  titre:  (item.json.titre || '').substring(0, 100),\n  resume: (item.json.resume || '').substring(0, 150)\n}));\n\nconst systemPrompt = `Tu es un filtre éditorial pour CALAO, newsletter économique destinée aux entrepreneurs d'Afrique francophone.\n\nPour chaque article, attribue un score de pertinence :\n5 = Impact économique direct (investissement, marché, financement, infrastructure)\n4 = Politique publique ou réglementation changeant les règles du jeu\n3 = Opportunité concrète, signal de marché, initiative entrepreneuriale\n2 = Information économique périphérique, contexte régional utile\n1 = Très faible pertinence mais acceptable\n0 = Exclure absolument : gambling, jeux d'argent, faits divers criminels, sport, politique partisane sans dimension économique, religion, météo, people\n\nRÈGLE IMPÉRATIVE : retourner un score pour chaque article soumis.\nRETOURNE UNIQUEMENT un JSON valide sans markdown :\n{\"scores\": [{\"id\": \"identifiant\", \"score\": 3}]}`;\n\nconst userMessage = `Évalue ces ${liste.length} articles :\\n${JSON.stringify(liste)}`;\n\nreturn [{\n  json: {\n    skip: false,\n    articles_count: articlesCibles.length,\n    body: JSON.stringify({\n      model: 'anthropic/claude-haiku-4-5',\n      max_tokens: 4000,\n      temperature: 0.1,\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user',   content: userMessage }\n      ]\n    }),\n    items_originaux: articlesCibles.map(item => item.json)\n  }\n}];"
       },
       "id": "9e92ef1d-563e-4ab4-b090-f2febe0511aa",
       "name": "Préparer body Haiku score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2944, 704]
+      "position": [
+        2944,
+        704
+      ]
     },
     {
       "parameters": {
@@ -297,20 +393,26 @@
               "name": "Authorization",
               "value": "Bearer OPENROUTER_API_KEY"
             },
-            {"name": "Content-Type", "value": "application/json"}
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify($json.body) }}",
+        "body": "={{ $json.body }}",
         "options": {}
       },
       "id": "3befd0fc-2b4d-4c82-8281-8197c3befb8d",
       "name": "Haiku Score",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3152, 704]
+      "position": [
+        3152,
+        704
+      ]
     },
     {
       "parameters": {
@@ -320,23 +422,56 @@
       "name": "Filtrer par score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3328, 704]
+      "position": [
+        3328,
+        704
+      ]
     },
     {
       "parameters": {
         "tableId": "raw_articles",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "source_id", "fieldValue": "={{ $json.source_id }}"},
-            {"fieldId": "titre", "fieldValue": "={{ $json.titre }}"},
-            {"fieldId": "resume", "fieldValue": "={{ $json.resume }}"},
-            {"fieldId": "url", "fieldValue": "={{ $json.url }}"},
-            {"fieldId": "image_url", "fieldValue": "={{ $json.image_url }}"},
-            {"fieldId": "image_valide", "fieldValue": "={{ $json.image_valide }}"},
-            {"fieldId": "date_publication", "fieldValue": "={{ $json.date_publication }}"},
-            {"fieldId": "semaine_id", "fieldValue": "={{ $json.semaine_id }}"},
-            {"fieldId": "doublons_hash", "fieldValue": "={{ $json.doublons_hash }}"},
-            {"fieldId": "selectionne", "fieldValue": "={{ $json.selectionne }}"}
+            {
+              "fieldId": "source_id",
+              "fieldValue": "={{ $json.source_id }}"
+            },
+            {
+              "fieldId": "titre",
+              "fieldValue": "={{ $json.titre }}"
+            },
+            {
+              "fieldId": "resume",
+              "fieldValue": "={{ $json.resume }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldId": "image_url",
+              "fieldValue": "={{ $json.image_url }}"
+            },
+            {
+              "fieldId": "image_valide",
+              "fieldValue": "={{ $json.image_valide }}"
+            },
+            {
+              "fieldId": "date_publication",
+              "fieldValue": "={{ $json.date_publication }}"
+            },
+            {
+              "fieldId": "semaine_id",
+              "fieldValue": "={{ $json.semaine_id }}"
+            },
+            {
+              "fieldId": "doublons_hash",
+              "fieldValue": "={{ $json.doublons_hash }}"
+            },
+            {
+              "fieldId": "selectionne",
+              "fieldValue": "={{ $json.selectionne }}"
+            }
           ]
         }
       },
@@ -344,7 +479,10 @@
       "name": "Supabase — Créer article",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [3520, 704],
+      "position": [
+        3520,
+        704
+      ],
       "credentials": {
         "supabaseApi": {
           "id": "qgQaNipmMDt1dnkB",
@@ -361,7 +499,10 @@
       "name": "Log rapport final",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3168, 448]
+      "position": [
+        3168,
+        448
+      ]
     },
     {
       "parameters": {
@@ -371,7 +512,10 @@
       "name": "Code — Générer requêtes GNews",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1536, 1184]
+      "position": [
+        1536,
+        1184
+      ]
     },
     {
       "parameters": {
@@ -381,7 +525,10 @@
       "name": "Split — Une requête GNews par item",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1744, 1184]
+      "position": [
+        1744,
+        1184
+      ]
     },
     {
       "parameters": {
@@ -389,12 +536,30 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {"name": "q", "value": "={{ $json.q }}"},
-            {"name": "lang", "value": "={{ $json.lang }}"},
-            {"name": "country", "value": "any"},
-            {"name": "max", "value": "10"},
-            {"name": "in", "value": "title,description"},
-            {"name": "token", "value": "GNEWS_API_TOKEN"}
+            {
+              "name": "q",
+              "value": "={{ $json.q }}"
+            },
+            {
+              "name": "lang",
+              "value": "={{ $json.lang }}"
+            },
+            {
+              "name": "country",
+              "value": "any"
+            },
+            {
+              "name": "max",
+              "value": "10"
+            },
+            {
+              "name": "in",
+              "value": "title,description"
+            },
+            {
+              "name": "token",
+              "value": "GNEWS_API_TOKEN"
+            }
           ]
         },
         "options": {}
@@ -403,7 +568,10 @@
       "name": "HTTP — GNews API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1968, 1200],
+      "position": [
+        1968,
+        1200
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -414,7 +582,10 @@
       "name": "Code — Normaliser GNews",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2192, 1200]
+      "position": [
+        2192,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -424,7 +595,10 @@
       "name": "Code — Générer requêtes NewsAPI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1568, 192]
+      "position": [
+        1568,
+        192
+      ]
     },
     {
       "parameters": {
@@ -434,7 +608,10 @@
       "name": "Split — Une requête NewsAPI par item",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1776, 192]
+      "position": [
+        1776,
+        192
+      ]
     },
     {
       "parameters": {
@@ -442,12 +619,30 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {"name": "q", "value": "={{ $json.q }}"},
-            {"name": "language", "value": "={{ $json.language }}"},
-            {"name": "sortBy", "value": "publishedAt"},
-            {"name": "pageSize", "value": "10"},
-            {"name": "from", "value": "={{ new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0] }}"},
-            {"name": "apiKey", "value": "NEWSAPI_API_KEY"}
+            {
+              "name": "q",
+              "value": "={{ $json.q }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "10"
+            },
+            {
+              "name": "from",
+              "value": "={{ new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0] }}"
+            },
+            {
+              "name": "apiKey",
+              "value": "NEWSAPI_API_KEY"
+            }
           ]
         },
         "options": {}
@@ -456,7 +651,10 @@
       "name": "HTTP — NewsAPI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 208],
+      "position": [
+        2000,
+        208
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -467,124 +665,405 @@
       "name": "Code — Normaliser NewsAPI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2224, 208]
+      "position": [
+        2224,
+        208
+      ]
     }
   ],
   "pinData": {},
   "connections": {
     "Cron — Mardi 05h00 UTC": {
-      "main": [[{"node": "Purge articles anciens", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Purge articles anciens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Purge articles anciens": {
-      "main": [[{"node": "Lire sources actives", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Lire sources actives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Lire sources actives": {
-      "main": [[{"node": "Générer semaine_id", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Générer semaine_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Générer semaine_id": {
-      "main": [[
-        {"node": "Code — Générer requêtes Tavily", "type": "main", "index": 0},
-        {"node": "Split — Une source RSS par item", "type": "main", "index": 0},
-        {"node": "Code — Générer requêtes GNews", "type": "main", "index": 0},
-        {"node": "Code — Générer requêtes SerpAPI", "type": "main", "index": 0},
-        {"node": "Code — Générer requêtes NewsAPI", "type": "main", "index": 0}
-      ]]
+      "main": [
+        [
+          {
+            "node": "Code — Générer requêtes Tavily",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split — Une source RSS par item",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code — Générer requêtes GNews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code — Générer requêtes SerpAPI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code — Générer requêtes NewsAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split — Une source RSS par item": {
       "main": [
-        [{"node": "Log rapport final", "type": "main", "index": 0}],
-        [{"node": "Fetch RSS", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Log rapport final",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch RSS": {
       "main": [
-        [{"node": "Code — Parse RSS", "type": "main", "index": 0}],
-        [{"node": "Code — Gérer erreur HTTP", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Code — Parse RSS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code — Gérer erreur HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Code — Parse RSS": {
-      "main": [[{"node": "Code — Dédoublonner", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Code — Dédoublonner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Gérer erreur HTTP": {
-      "main": [[{"node": "HTTP — Incrémenter échecs", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "HTTP — Incrémenter échecs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "HTTP — Incrémenter échecs": {
-      "main": [[{"node": "Split — Une source RSS par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une source RSS par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Générer requêtes SerpAPI": {
-      "main": [[{"node": "Split — Une requête SerpAPI par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête SerpAPI par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split — Une requête SerpAPI par item": {
       "main": [
-        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
-        [{"node": "HTTP — SerpAPI Google News", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Code — Dédoublonner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP — SerpAPI Google News",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "HTTP — SerpAPI Google News": {
-      "main": [[{"node": "Code — Normaliser SerpAPI", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Code — Normaliser SerpAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Normaliser SerpAPI": {
-      "main": [[{"node": "Split — Une requête SerpAPI par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête SerpAPI par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Générer requêtes Tavily": {
-      "main": [[{"node": "Split — Une requête Tavily par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête Tavily par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split — Une requête Tavily par item": {
       "main": [
-        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
-        [{"node": "HTTP — Tavily Search", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Code — Dédoublonner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP — Tavily Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "HTTP — Tavily Search": {
-      "main": [[{"node": "Code — Normaliser Tavily", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Code — Normaliser Tavily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Normaliser Tavily": {
-      "main": [[{"node": "Split — Une requête Tavily par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête Tavily par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Dédoublonner": {
-      "main": [[{"node": "Préparer body Haiku score", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Préparer body Haiku score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Préparer body Haiku score": {
-      "main": [[{"node": "Haiku Score", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Haiku Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Haiku Score": {
-      "main": [[{"node": "Filtrer par score", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Filtrer par score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Filtrer par score": {
-      "main": [[{"node": "Supabase — Créer article", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Supabase — Créer article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Supabase — Créer article": {
-      "main": [[{"node": "Split — Une source RSS par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une source RSS par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Générer requêtes GNews": {
-      "main": [[{"node": "Split — Une requête GNews par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête GNews par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split — Une requête GNews par item": {
       "main": [
-        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
-        [{"node": "HTTP — GNews API", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Code — Dédoublonner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP — GNews API",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "HTTP — GNews API": {
-      "main": [[{"node": "Code — Normaliser GNews", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Code — Normaliser GNews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Normaliser GNews": {
-      "main": [[{"node": "Split — Une requête GNews par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête GNews par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Générer requêtes NewsAPI": {
-      "main": [[{"node": "Split — Une requête NewsAPI par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête NewsAPI par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split — Une requête NewsAPI par item": {
       "main": [
-        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
-        [{"node": "HTTP — NewsAPI", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Code — Dédoublonner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP — NewsAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "HTTP — NewsAPI": {
-      "main": [[{"node": "Code — Normaliser NewsAPI", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Code — Normaliser NewsAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Code — Normaliser NewsAPI": {
-      "main": [[{"node": "Split — Une requête NewsAPI par item", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Split — Une requête NewsAPI par item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
