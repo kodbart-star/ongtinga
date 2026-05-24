@@ -1,0 +1,602 @@
+{
+  "name": "CALAO — Bloc 1 — Collecte Multi-Sources V2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 5 * * 2"
+            }
+          ]
+        }
+      },
+      "id": "010307f3-d3fb-4d45-ba94-5aa1e23275be",
+      "name": "Cron — Mardi 05h00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [640, 720]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://exhcdxmhtjqhpsmutvrb.supabase.co/rest/v1/rpc/purge_old_articles",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=minimal"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "46ab0550-a8ce-4f72-9417-f7b73f0aa7ee",
+      "name": "Purge articles anciens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [864, 720]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sources",
+        "filterType": "string",
+        "filterString": "statut=in.(prioritaire,secondaire)"
+      },
+      "id": "bb06cc28-4210-4e44-986b-34bcdfa67118",
+      "name": "Lire sources actives",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1088, 720],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgQaNipmMDt1dnkB",
+          "name": "Supabase CALAO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Générer le semaine_id au format ISO '2026-W21'\n\nfunction getISOWeek(date) {\n  const d = new Date(date);\n  d.setHours(0, 0, 0, 0);\n  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);\n  const week1 = new Date(d.getFullYear(), 0, 4);\n  return 1 + Math.round(\n    ((d.getTime() - week1.getTime()) / 86400000\n    - 3 + (week1.getDay() + 6) % 7) / 7\n  );\n}\n\nconst now = new Date();\nconst year = now.getFullYear();\nconst week = getISOWeek(now);\nconst semaine_id = `${year}-W${String(week).padStart(2, '0')}`;\n\nreturn $input.all().map(item => ({\n  json: { ...item.json, semaine_id }\n}));"
+      },
+      "id": "74a20aa1-666e-46f5-b143-48c808045f62",
+      "name": "Générer semaine_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1280, 720]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "a5a0964d-0ef5-4fa5-bf55-81b3cf07fb3d",
+      "name": "Split — Une source RSS par item",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1568, 464]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url_rss }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "User-Agent", "value": "CALAO-Newsletter-Bot/1.0"},
+            {"name": "Accept", "value": "application/rss+xml, application/xml, text/xml, */*"}
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "206b9b95-8b74-4161-8a95-196cb6e6391d",
+      "name": "Fetch RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 480],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// CALAO — Code — Parse RSS\n// Version 3 — source_id garanti depuis Split\n// Gère RSS 2.0 et Atom 1.0\n// Extrait : titre, résumé, date, url, image\n// Fenêtre : 30 jours\n// ============================================================\n\nconst crypto = require('crypto');\n\nconst inputItem = $('Split — Une source RSS par item').item.json;\nconst sourceId  = inputItem.id;\nconst sourceNom = inputItem.nom;\nconst semaineId = inputItem.semaine_id;\n\nif (!sourceId) {\n  throw new Error(`source_id manquant — vérifier le nœud Split`);\n}\n\nconst xmlRaw = $input.item.json.data\n            || $input.item.json.body\n            || '';\n\nif (!xmlRaw || xmlRaw.trim() === '') {\n  throw new Error(`RSS vide : ${sourceNom}`);\n}\n\nfunction extraireTexte(xml, balise) {\n  try {\n    const cdata = new RegExp(\n      `<${balise}[^>]*><!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]><\\\\/${balise}>`, 'i'\n    );\n    const mc = xml.match(cdata);\n    if (mc) return mc[1].trim();\n    const simple = new RegExp(\n      `<${balise}[^>]*>([\\\\s\\\\S]*?)<\\\\/${balise}>`, 'i'\n    );\n    const ms = xml.match(simple);\n    if (ms) return ms[1].replace(/<[^>]+>/g, '').trim();\n    return null;\n  } catch(e) { return null; }\n}\n\nfunction extraireAttribut(xml, balise, attribut) {\n  try {\n    const reg = new RegExp(\n      `<${balise}[^>]*${attribut}=[\\\"']([^\\\"']*)[\\\"'][^>]*>`, 'i'\n    );\n    const m = xml.match(reg);\n    return m ? m[1].trim() : null;\n  } catch(e) { return null; }\n}\n\nfunction extraireImage(itemXml) {\n  let img = extraireAttribut(itemXml, 'media:content', 'url');\n  if (img) return img;\n  const enc1 = /<enclosure[^>]*type=[\\\"']image[^\\\"']*[\\\"'][^>]*url=[\\\"']([^\\\"']*)[\\\"']/i;\n  const em1 = itemXml.match(enc1);\n  if (em1) return em1[1];\n  const enc2 = /<enclosure[^>]*url=[\\\"']([^\\\"']*)[\\\"'][^>]*type=[\\\"']image[^\\\"']*[\\\"']/i;\n  const em2 = itemXml.match(enc2);\n  if (em2) return em2[1];\n  const imgTag = /<img[^>]*src=[\\\"']([^\\\"']*)[\\\"']/i;\n  const eim = itemXml.match(imgTag);\n  if (eim) return eim[1];\n  return null;\n}\n\nfunction normaliserDate(dateStr) {\n  if (!dateStr) return null;\n  try {\n    const normalise = dateStr\n      .trim()\n      .replace(/\\bGMT\\b/, '+0000')\n      .replace(/\\bUTC\\b/, '+0000');\n    const d = new Date(normalise);\n    return isNaN(d.getTime()) ? null : d.toISOString();\n  } catch(e) { return null; }\n}\n\nfunction genererHash(titre) {\n  if (!titre) return null;\n  const n = titre\n    .toLowerCase()\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9]/g, '')\n    .trim();\n  return crypto.createHash('md5').update(n).digest('hex');\n}\n\nfunction articleRecent(dateStr, joursMax) {\n  if (!dateStr) return false;\n  const date = new Date(dateStr);\n  const limite = new Date();\n  limite.setDate(limite.getDate() - joursMax);\n  return date >= limite;\n}\n\nconst isAtom = xmlRaw.includes('<feed') &&\n  xmlRaw.includes('xmlns=\"http://www.w3.org/2005/Atom\"');\n\nconst baliseItem   = isAtom ? 'entry'   : 'item';\nconst baliseDate   = isAtom ? 'updated' : 'pubDate';\nconst baliseResume = isAtom ? 'summary' : 'description';\n\nconst itemRegex = new RegExp(\n  `<${baliseItem}[\\\\s>][\\\\s\\\\S]*?<\\\\/${baliseItem}>`, 'gi'\n);\nconst itemsXml = xmlRaw.match(itemRegex) || [];\n\nconsole.log(`[${sourceNom}] Items trouvés: ${itemsXml.length}`);\n\nif (itemsXml.length === 0) {\n  console.log(`[${sourceNom}] Aucun item dans le flux — skip`);\n  return [{ json: { source_nom: sourceNom, articles_count: 0, skip: true } }];\n}\n\nconst articles = [];\n\nfor (const itemXml of itemsXml) {\n  try {\n    const titre = extraireTexte(itemXml, 'title');\n    if (!titre) continue;\n    let url = null;\n    if (isAtom) {\n      url = extraireAttribut(itemXml, 'link', 'href');\n    } else {\n      url = extraireTexte(itemXml, 'link');\n      if (!url) url = extraireAttribut(itemXml, 'link', 'href');\n    }\n    if (!url || url.trim() === '') continue;\n    const dateStr = extraireTexte(itemXml, baliseDate)\n                 || extraireTexte(itemXml, 'dc:date')\n                 || extraireTexte(itemXml, 'published');\n    const dateNorm = normaliserDate(dateStr);\n    if (!articleRecent(dateNorm, 30)) continue;\n    const resume = extraireTexte(itemXml, baliseResume)\n                || extraireTexte(itemXml, 'content')\n                || extraireTexte(itemXml, 'content:encoded');\n    const imageUrl = extraireImage(itemXml);\n    const hash = genererHash(titre);\n    if (!hash) continue;\n    articles.push({\n      json: {\n        source_id:        sourceId,\n        source_nom:       sourceNom,\n        semaine_id:       semaineId,\n        titre:            titre.substring(0, 500),\n        resume:           resume ? resume.substring(0, 2000) : null,\n        url:              url.trim(),\n        image_url:        imageUrl || null,\n        image_valide:     imageUrl ? true : false,\n        date_publication: dateNorm,\n        doublons_hash:    hash,\n        selectionne:      false\n      }\n    });\n  } catch(e) { continue; }\n}\n\nconsole.log(`[${sourceNom}] Articles valides après filtrage: ${articles.length}`);\n\nif (articles.length === 0) {\n  return [{ json: { source_nom: sourceNom, articles_count: 0, skip: true } }];\n}\n\nreturn articles;"
+      },
+      "id": "2347c88e-b4b3-4db4-907f-2e31b178443a",
+      "name": "Code — Parse RSS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2448, 464]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gestion erreur HTTP — source inaccessible\nconst sourceId  = $('Split — Une source RSS par item').item.json.id;\nconst sourceNom = $('Split — Une source RSS par item').item.json.nom;\nconst erreur    = $input.item.json.error?.message || 'Erreur inconnue';\nconsole.log(`[CALAO] Erreur RSS — ${sourceNom} : ${erreur}`);\nreturn [{ json: { source_id: sourceId, source_nom: sourceNom, erreur } }];"
+      },
+      "id": "9cf3351f-1ed3-486c-92dc-acb3ea052047",
+      "name": "Code — Gérer erreur HTTP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2016, 496]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://exhcdxmhtjqhpsmutvrb.supabase.co/rest/v1/sources?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=minimal"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ JSON.stringify({ nb_echecs: ($('Split — Une source RSS par item').item.json.nb_echecs || 0) + 1, dernier_echec: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "18936166-fbd9-415a-aa10-f85239b21769",
+      "name": "HTTP — Incrémenter échecs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2240, 496]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Générer les 12 requêtes SerpAPI\nconst REQUETES = [\n  { q: 'entrepreneuriat PME startup Afrique francophone 2026', rubrique: 1 },\n  { q: 'création entreprise Gabon Afrique centrale financement 2026', rubrique: 1 },\n  { q: 'économie croissance Afrique subsaharienne investissement 2026', rubrique: 2 },\n  { q: 'PIB commerce marché Afrique centrale CEMAC 2026', rubrique: 2 },\n  { q: 'fiscalité réglementation affaires Afrique réforme 2026', rubrique: 3 },\n  { q: 'impôts TVA code investissements Gabon OHADA 2026', rubrique: 3 },\n  { q: 'appel offres financement BAD Banque mondiale Afrique 2026', rubrique: 4 },\n  { q: 'opportunité marché contrat investissement Gabon 2026', rubrique: 4 },\n  { q: 'fintech mobile money innovation numérique Afrique entrepreneurs 2026', rubrique: 5 },\n  { q: 'technologie agriculture énergie startup Afrique centrale 2026', rubrique: 5 },\n  { q: 'politique économique décision FMI Banque mondiale impact Afrique 2026', rubrique: 6 },\n  { q: 'géopolitique matières premières pétrole bois Afrique répercussions 2026', rubrique: 6 },\n];\nreturn REQUETES.map((r, i) => ({ json: { ...r, requete_index: i } }));"
+      },
+      "id": "b30957d6-ef55-4dee-84e0-f1cad75a6eb6",
+      "name": "Code — Générer requêtes SerpAPI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1552, 976]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "de67ae03-edfc-4f59-85b1-eded69502345",
+      "name": "Split — Une requête SerpAPI par item",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [2432, 976]
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "engine", "value": "google_news"},
+            {"name": "q", "value": "={{ $json.q }}"},
+            {"name": "gl", "value": "fr"},
+            {"name": "hl", "value": "fr"},
+            {"name": "num", "value": "10"},
+            {"name": "api_key", "value": "VOTRE_CLE_SERPAPI"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "49a2a462-38aa-40d2-a0fb-6b7674e0e49d",
+      "name": "HTTP — SerpAPI Google News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2656, 992],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Normaliser résultats SerpAPI Google News\nconst crypto = require('crypto');\n\nfunction getISOWeek(date) {\n  const d = new Date(date);\n  d.setHours(0,0,0,0);\n  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);\n  const week1 = new Date(d.getFullYear(), 0, 4);\n  return 1 + Math.round(((d.getTime()-week1.getTime())/86400000 - 3 + (week1.getDay()+6)%7)/7);\n}\nconst now = new Date();\nconst semaine_id = `${now.getFullYear()}-W${String(getISOWeek(now)).padStart(2,'0')}`;\n\nconst reponse = $input.first().json;\nconst newsResults = reponse.news_results || reponse.top_stories || [];\n\nconst articles = [];\nfor (const item of newsResults) {\n  const titre = (item.title || '').trim();\n  const url   = item.link || item.url || '';\n  if (!titre || !url) continue;\n  const hash = crypto.createHash('sha256')\n    .update(titre.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,60))\n    .digest('hex').substring(0,16);\n  articles.push({ json: {\n    source_id: '395f74c8-5fab-4308-afa6-e42a0aba5e5b',\n    source_nom:       (item.source && item.source.name) ? item.source.name : 'SerpAPI',\n    titre,\n    resume:           item.snippet || item.description || '',\n    url,\n    image_url:        item.thumbnail || null,\n    image_valide:     !!item.thumbnail,\n    date_publication: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),\n    doublons_hash:    hash,\n    semaine_id,\n    selectionne:      false,\n    collecteur:       'serpapi'\n  }});\n}\n\nconsole.log(`[CALAO SerpAPI] ${articles.length} articles normalisés`);\nif (articles.length === 0) return [{ json: { skip: true } }];\nreturn articles;"
+      },
+      "id": "2215d1df-82c4-4d57-8bb4-a3cab3fefe02",
+      "name": "Code — Normaliser SerpAPI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 992]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Générer les 12 requêtes Tavily\nconst REQUETES = [\n  { query: 'entrepreneuriat PME startup Afrique francophone 2026', rubrique: 1 },\n  { query: 'création entreprise Gabon Afrique centrale financement', rubrique: 1 },\n  { query: 'économie croissance Afrique subsaharienne investissement 2026', rubrique: 2 },\n  { query: 'marché commerce Afrique centrale CEMAC opportunités', rubrique: 2 },\n  { query: 'fiscalité réglementation affaires Afrique réforme 2026', rubrique: 3 },\n  { query: 'code investissements Gabon OHADA impôts entreprises', rubrique: 3 },\n  { query: 'appel offres BAD Banque mondiale financement projet Afrique 2026', rubrique: 4 },\n  { query: 'opportunité marché investissement Gabon Afrique centrale', rubrique: 4 },\n  { query: 'fintech mobile money paiement numérique Afrique 2026', rubrique: 5 },\n  { query: 'innovation technologie startup agritech énergie Afrique', rubrique: 5 },\n  { query: 'FMI Banque mondiale politique économique impact Afrique 2026', rubrique: 6 },\n  { query: 'matières premières pétrole bois minerais Afrique économie', rubrique: 6 },\n];\nreturn REQUETES.map((r, i) => ({ json: { ...r, requete_index: i } }));"
+      },
+      "id": "7494a4d4-013b-4147-84e3-9a26d95b07ed",
+      "name": "Code — Générer requêtes Tavily",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1568, 720]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f924b84b-c397-4cb1-8d88-57e11e3fb1fb",
+      "name": "Split — Une requête Tavily par item",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1776, 720]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({api_key: 'TAVILY_API_KEY', query: $json.query, topic: 'news', search_depth: 'advanced', max_results: 10, days: 7}) }}",
+        "options": {}
+      },
+      "id": "9db140a7-89e2-4445-b779-f4c9824c66ec",
+      "name": "HTTP — Tavily Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 736],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Normaliser résultats Tavily\nconst crypto = require('crypto');\n\nfunction getISOWeek(date) {\n  const d = new Date(date);\n  d.setHours(0,0,0,0);\n  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);\n  const week1 = new Date(d.getFullYear(), 0, 4);\n  return 1 + Math.round(((d.getTime()-week1.getTime())/86400000 - 3 + (week1.getDay()+6)%7)/7);\n}\nconst now = new Date();\nconst semaine_id = `${now.getFullYear()}-W${String(getISOWeek(now)).padStart(2,'0')}`;\n\nfunction extraireHostname(url) {\n  try {\n    const match = url.match(/^https?:\\/\\/([^\\/]+)/);\n    return match ? match[1] : url;\n  } catch(e) { return url; }\n}\n\nconst reponse = $input.first().json;\nconst results = reponse.results || [];\n\nconst articles = [];\nfor (const item of results) {\n  const titre = (item.title || '').trim();\n  const url   = item.url || '';\n  if (!titre || !url) continue;\n  const hash = crypto.createHash('sha256')\n    .update(titre.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,60))\n    .digest('hex').substring(0,16);\n  articles.push({ json: {\n    source_id: '17397726-3693-453f-bb4b-f7cb05d2c410',\n    source_nom:       item.source || extraireHostname(url),\n    titre,\n    resume:           (item.content || item.snippet || '').substring(0, 500),\n    url,\n    image_url:        null,\n    image_valide:     false,\n    date_publication: item.published_date ? new Date(item.published_date).toISOString() : new Date().toISOString(),\n    doublons_hash:    hash,\n    semaine_id,\n    selectionne:      false,\n    collecteur:       'tavily'\n  }});\n}\n\nconsole.log(`[CALAO Tavily] ${articles.length} articles normalisés`);\nif (articles.length === 0) return [{ json: { skip: true } }];\nreturn articles;"
+      },
+      "id": "9c666cdb-5a60-4778-90e7-902aa3f563e9",
+      "name": "Code — Normaliser Tavily",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2224, 736]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Dédoublonner tous les articles par hash\nconst items = $input.all();\nconst vus = new Set();\nconst resultat = [];\n\nfor (const item of items) {\n  if (item.json.skip === true) continue;\n  const hash = item.json.doublons_hash;\n  if (!hash || vus.has(hash)) continue;\n  vus.add(hash);\n  resultat.push(item);\n}\n\nconsole.log(`[CALAO Dedup] ${items.length} reçus → ${resultat.length} uniques`);\nif (resultat.length === 0) return [{ json: { skip: true, articles_count: 0 } }];\nreturn resultat;"
+      },
+      "id": "584fab1f-597f-4559-8de9-134bf2cc49a2",
+      "name": "Code — Dédoublonner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2720, 704]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// CALAO — Bloc 1 — Préparer body pour scoring Haiku\n// Version 3 — limite 50 articles, format body string\n// ============================================================\n\nconst items = $input.all();\n\nconst articlesValides = items.filter(item =>\n  item.json.skip !== true &&\n  item.json.url &&\n  item.json.doublons_hash\n);\n\nif (articlesValides.length === 0) {\n  return [{ json: { skip: true, articles_count: 0, body: null, items_originaux: [] } }];\n}\n\nconst articlesCibles = articlesValides.slice(0, 50);\n\nconst liste = articlesCibles.map(item => ({\n  id:     item.json.doublons_hash,\n  titre:  (item.json.titre || '').substring(0, 100),\n  resume: (item.json.resume || '').substring(0, 150)\n}));\n\nconst systemPrompt = `Tu es un filtre éditorial pour CALAO, newsletter économique destinée aux entrepreneurs d'Afrique francophone.\n\nPour chaque article, attribue un score de pertinence :\n5 = Impact économique direct (investissement, marché, financement, infrastructure)\n4 = Politique publique ou réglementation changeant les règles du jeu\n3 = Opportunité concrète, signal de marché, initiative entrepreneuriale\n2 = Information économique périphérique, contexte régional utile\n1 = Très faible pertinence mais acceptable\n0 = Exclure absolument : gambling, jeux d'argent, faits divers criminels, sport, politique partisane sans dimension économique, religion, météo, people\n\nRÈGLE IMPÉRATIVE : retourner un score pour chaque article soumis.\nRETOURNE UNIQUEMENT un JSON valide sans markdown :\n{\"scores\": [{\"id\": \"identifiant\", \"score\": 3}]}`;\n\nconst userMessage = `Évalue ces ${liste.length} articles :\\n${JSON.stringify(liste)}`;\n\nreturn [{\n  json: {\n    skip: false,\n    articles_count: articlesCibles.length,\n    body: {\n      model: 'anthropic/claude-haiku-4-5',\n      max_tokens: 4000,\n      temperature: 0.1,\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user',   content: userMessage }\n      ]\n    },\n    items_originaux: articlesCibles.map(item => item.json)\n  }\n}];"
+      },
+      "id": "9e92ef1d-563e-4ab4-b090-f2febe0511aa",
+      "name": "Préparer body Haiku score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2944, 704]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer OPENROUTER_API_KEY"
+            },
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "3befd0fc-2b4d-4c82-8281-8197c3befb8d",
+      "name": "Haiku Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3152, 704]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Bloc 1 — Filtrer par score Haiku\nconst SCORE_MINIMUM = 2;\n\nconst input = $input.first().json;\n\nif (input.skip === true) {\n  return [{ json: { articles_count: 0, skip: true } }];\n}\n\nconst itemsOriginaux = $('Préparer body Haiku score').first().json.items_originaux || [];\n\nlet scores = {};\ntry {\n  const reponse = $input.first().json;\n  let texte = reponse.choices?.[0]?.message?.content || '';\n  texte = texte.replace(/```json/g, '').replace(/```/g, '').trim();\n  const jsonMatch = texte.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    (parsed.scores || []).forEach(s => { scores[s.id] = s.score; });\n  }\n  console.log(`[CALAO Bloc1] ${Object.keys(scores).length} scores reçus de Haiku`);\n} catch(e) {\n  console.warn('[CALAO Bloc1] Erreur parsing scores — fallback score 2 pour tous');\n  itemsOriginaux.forEach(item => {\n    if (item.doublons_hash) scores[item.doublons_hash] = 2;\n  });\n}\n\nconst resultat = [];\nfor (const item of itemsOriginaux) {\n  if (item.skip === true) continue;\n  if (!item.doublons_hash) continue;\n  if (!item.url) continue;\n  const score = scores[item.doublons_hash] ?? 0;\n  if (score < SCORE_MINIMUM) {\n    console.log(`[CALAO] Exclu score ${score} : ${(item.titre || '').substring(0, 60)}`);\n    continue;\n  }\n  resultat.push({ json: { ...item, score_pertinence: score } });\n}\n\nif (resultat.length === 0) {\n  return [{ json: { articles_count: 0, skip: true } }];\n}\n\nconsole.log(`[CALAO Bloc1] ${resultat.length} articles retenus (score >= ${SCORE_MINIMUM})`);\nreturn resultat;"
+      },
+      "id": "011cce37-cd75-46f8-95a1-aba8c64bb892",
+      "name": "Filtrer par score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3328, 704]
+    },
+    {
+      "parameters": {
+        "tableId": "raw_articles",
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "source_id", "fieldValue": "={{ $json.source_id }}"},
+            {"fieldId": "titre", "fieldValue": "={{ $json.titre }}"},
+            {"fieldId": "resume", "fieldValue": "={{ $json.resume }}"},
+            {"fieldId": "url", "fieldValue": "={{ $json.url }}"},
+            {"fieldId": "image_url", "fieldValue": "={{ $json.image_url }}"},
+            {"fieldId": "image_valide", "fieldValue": "={{ $json.image_valide }}"},
+            {"fieldId": "date_publication", "fieldValue": "={{ $json.date_publication }}"},
+            {"fieldId": "semaine_id", "fieldValue": "={{ $json.semaine_id }}"},
+            {"fieldId": "doublons_hash", "fieldValue": "={{ $json.doublons_hash }}"},
+            {"fieldId": "selectionne", "fieldValue": "={{ $json.selectionne }}"}
+          ]
+        }
+      },
+      "id": "9e6a6b68-c89f-4890-865a-c82dc068b471",
+      "name": "Supabase — Créer article",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3520, 704],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgQaNipmMDt1dnkB",
+          "name": "Supabase CALAO"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Log rapport final multi-sources\nconst semaine = $('Générer semaine_id').first().json.semaine_id;\nconsole.log([\n  '================================',\n  'CALAO — Collecte multi-sources terminée',\n  `Semaine : ${semaine}`,\n  'Sources : RSS + SerpAPI + Tavily + GNews + NewsAPI',\n  '================================'\n].join('\\n'));\nreturn [{ json: { semaine_id: semaine, statut: 'collecte_terminee' } }];"
+      },
+      "id": "e93d3ebc-d164-48ce-9643-6cf3afe488c0",
+      "name": "Log rapport final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3168, 448]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Générer les 6 requêtes GNews\nconst REQUETES = [\n  { q: 'Africa economy investment entrepreneur 2026', lang: 'en' },\n  { q: 'Afrique entrepreneuriat économie PME', lang: 'fr' },\n  { q: 'Africa fintech startup mobile money', lang: 'en' },\n  { q: 'Gabon économie investissement opportunité', lang: 'fr' },\n  { q: 'IMF World Bank Africa policy economy', lang: 'en' },\n  { q: 'Afrique centrale CEMAC financement projet', lang: 'fr' },\n];\nreturn REQUETES.map((r, i) => ({ json: { ...r, requete_index: i } }));"
+      },
+      "id": "38321f0f-dc5e-40e1-9c7e-bb92a62526ee",
+      "name": "Code — Générer requêtes GNews",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1536, 1184]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a2612d7e-a0b8-40c0-b545-93f407f51ed7",
+      "name": "Split — Une requête GNews par item",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1744, 1184]
+    },
+    {
+      "parameters": {
+        "url": "https://gnews.io/api/v4/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "q", "value": "={{ $json.q }}"},
+            {"name": "lang", "value": "={{ $json.lang }}"},
+            {"name": "country", "value": "any"},
+            {"name": "max", "value": "10"},
+            {"name": "in", "value": "title,description"},
+            {"name": "token", "value": "GNEWS_API_TOKEN"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "0c699a4b-306c-46b9-9d40-d29b85e55dee",
+      "name": "HTTP — GNews API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1968, 1200],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Normaliser résultats GNews API\nconst crypto = require('crypto');\n\nfunction getISOWeek(date) {\n  const d = new Date(date);\n  d.setHours(0,0,0,0);\n  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);\n  const week1 = new Date(d.getFullYear(), 0, 4);\n  return 1 + Math.round(((d.getTime()-week1.getTime())/86400000 - 3 + (week1.getDay()+6)%7)/7);\n}\nconst now = new Date();\nconst semaine_id = `${now.getFullYear()}-W${String(getISOWeek(now)).padStart(2,'0')}`;\n\nconst reponse = $input.first().json;\nconst articles_raw = reponse.articles || [];\n\nconst articles = [];\nfor (const item of articles_raw) {\n  const titre = (item.title || '').trim();\n  const url   = item.url || '';\n  if (!titre || !url) continue;\n  const hash = crypto.createHash('sha256')\n    .update(titre.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,60))\n    .digest('hex').substring(0,16);\n  articles.push({ json: {\n    source_id: 'ce04dd5c-f999-41d7-8875-a9c9b1ee1419',\n    source_nom:       (item.source && item.source.name) ? item.source.name : 'GNews',\n    titre,\n    resume:           (item.description || '').substring(0, 500),\n    url,\n    image_url:        item.image || null,\n    image_valide:     !!item.image,\n    date_publication: item.publishedAt ? new Date(item.publishedAt).toISOString() : new Date().toISOString(),\n    doublons_hash:    hash,\n    semaine_id,\n    selectionne:      false,\n    collecteur:       'gnews'\n  }});\n}\n\nconsole.log(`[CALAO GNews] ${articles.length} articles normalisés`);\nif (articles.length === 0) return [{ json: { skip: true } }];\nreturn articles;"
+      },
+      "id": "983f73f4-b2d6-45d6-9cd8-e72aba1764d6",
+      "name": "Code — Normaliser GNews",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2192, 1200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Générer les 6 requêtes NewsAPI\nconst REQUETES = [\n  { q: 'Africa economy business entrepreneur', language: 'fr' },\n  { q: 'Afrique centrale investissement CEMAC Gabon', language: 'fr' },\n  { q: 'Africa fintech innovation startup funding', language: 'en' },\n  { q: 'Gabon business investment economy', language: 'en' },\n  { q: 'Africa IMF fiscal policy reform 2026', language: 'en' },\n  { q: 'commodities oil impact Africa economy', language: 'en' },\n];\nreturn REQUETES.map((r, i) => ({ json: { ...r, requete_index: i } }));"
+      },
+      "id": "61bc4488-c227-47b2-9eb1-4de606da639b",
+      "name": "Code — Générer requêtes NewsAPI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1568, 192]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c2666b3c-9ed8-4614-8e9a-061fd6bc569b",
+      "name": "Split — Une requête NewsAPI par item",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1776, 192]
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "q", "value": "={{ $json.q }}"},
+            {"name": "language", "value": "={{ $json.language }}"},
+            {"name": "sortBy", "value": "publishedAt"},
+            {"name": "pageSize", "value": "10"},
+            {"name": "from", "value": "={{ new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0] }}"},
+            {"name": "apiKey", "value": "NEWSAPI_API_KEY"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "f31c4aa1-e72b-4022-9899-0497a4c378f3",
+      "name": "HTTP — NewsAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 208],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CALAO — Normaliser résultats NewsAPI\nconst crypto = require('crypto');\n\nfunction getISOWeek(date) {\n  const d = new Date(date);\n  d.setHours(0,0,0,0);\n  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);\n  const week1 = new Date(d.getFullYear(), 0, 4);\n  return 1 + Math.round(((d.getTime()-week1.getTime())/86400000 - 3 + (week1.getDay()+6)%7)/7);\n}\nconst now = new Date();\nconst semaine_id = `${now.getFullYear()}-W${String(getISOWeek(now)).padStart(2,'0')}`;\n\nconst reponse = $input.first().json;\nconst articles_raw = reponse.articles || [];\n\nconst articles = [];\nfor (const item of articles_raw) {\n  if (item.title === '[Removed]') continue;\n  const titre = (item.title || '').trim();\n  const url   = item.url || '';\n  if (!titre || !url) continue;\n  const hash = crypto.createHash('sha256')\n    .update(titre.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,60))\n    .digest('hex').substring(0,16);\n  articles.push({ json: {\n    source_id: '056ca021-bfb1-4afa-88fd-3961336fb640',\n    source_nom:       (item.source && item.source.name) ? item.source.name : 'NewsAPI',\n    titre,\n    resume:           (item.description || '').substring(0, 500),\n    url,\n    image_url:        item.urlToImage || null,\n    image_valide:     !!item.urlToImage,\n    date_publication: item.publishedAt ? new Date(item.publishedAt).toISOString() : new Date().toISOString(),\n    doublons_hash:    hash,\n    semaine_id,\n    selectionne:      false,\n    collecteur:       'newsapi'\n  }});\n}\n\nconsole.log(`[CALAO NewsAPI] ${articles.length} articles normalisés`);\nif (articles.length === 0) return [{ json: { skip: true } }];\nreturn articles;"
+      },
+      "id": "a9856ce1-dcd4-4873-887f-252c601330db",
+      "name": "Code — Normaliser NewsAPI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2224, 208]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron — Mardi 05h00 UTC": {
+      "main": [[{"node": "Purge articles anciens", "type": "main", "index": 0}]]
+    },
+    "Purge articles anciens": {
+      "main": [[{"node": "Lire sources actives", "type": "main", "index": 0}]]
+    },
+    "Lire sources actives": {
+      "main": [[{"node": "Générer semaine_id", "type": "main", "index": 0}]]
+    },
+    "Générer semaine_id": {
+      "main": [[
+        {"node": "Code — Générer requêtes Tavily", "type": "main", "index": 0},
+        {"node": "Split — Une source RSS par item", "type": "main", "index": 0},
+        {"node": "Code — Générer requêtes GNews", "type": "main", "index": 0},
+        {"node": "Code — Générer requêtes SerpAPI", "type": "main", "index": 0},
+        {"node": "Code — Générer requêtes NewsAPI", "type": "main", "index": 0}
+      ]]
+    },
+    "Split — Une source RSS par item": {
+      "main": [
+        [{"node": "Log rapport final", "type": "main", "index": 0}],
+        [{"node": "Fetch RSS", "type": "main", "index": 0}]
+      ]
+    },
+    "Fetch RSS": {
+      "main": [
+        [{"node": "Code — Parse RSS", "type": "main", "index": 0}],
+        [{"node": "Code — Gérer erreur HTTP", "type": "main", "index": 0}]
+      ]
+    },
+    "Code — Parse RSS": {
+      "main": [[{"node": "Code — Dédoublonner", "type": "main", "index": 0}]]
+    },
+    "Code — Gérer erreur HTTP": {
+      "main": [[{"node": "HTTP — Incrémenter échecs", "type": "main", "index": 0}]]
+    },
+    "HTTP — Incrémenter échecs": {
+      "main": [[{"node": "Split — Une source RSS par item", "type": "main", "index": 0}]]
+    },
+    "Code — Générer requêtes SerpAPI": {
+      "main": [[{"node": "Split — Une requête SerpAPI par item", "type": "main", "index": 0}]]
+    },
+    "Split — Une requête SerpAPI par item": {
+      "main": [
+        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
+        [{"node": "HTTP — SerpAPI Google News", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP — SerpAPI Google News": {
+      "main": [[{"node": "Code — Normaliser SerpAPI", "type": "main", "index": 0}]]
+    },
+    "Code — Normaliser SerpAPI": {
+      "main": [[{"node": "Split — Une requête SerpAPI par item", "type": "main", "index": 0}]]
+    },
+    "Code — Générer requêtes Tavily": {
+      "main": [[{"node": "Split — Une requête Tavily par item", "type": "main", "index": 0}]]
+    },
+    "Split — Une requête Tavily par item": {
+      "main": [
+        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
+        [{"node": "HTTP — Tavily Search", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP — Tavily Search": {
+      "main": [[{"node": "Code — Normaliser Tavily", "type": "main", "index": 0}]]
+    },
+    "Code — Normaliser Tavily": {
+      "main": [[{"node": "Split — Une requête Tavily par item", "type": "main", "index": 0}]]
+    },
+    "Code — Dédoublonner": {
+      "main": [[{"node": "Préparer body Haiku score", "type": "main", "index": 0}]]
+    },
+    "Préparer body Haiku score": {
+      "main": [[{"node": "Haiku Score", "type": "main", "index": 0}]]
+    },
+    "Haiku Score": {
+      "main": [[{"node": "Filtrer par score", "type": "main", "index": 0}]]
+    },
+    "Filtrer par score": {
+      "main": [[{"node": "Supabase — Créer article", "type": "main", "index": 0}]]
+    },
+    "Supabase — Créer article": {
+      "main": [[{"node": "Split — Une source RSS par item", "type": "main", "index": 0}]]
+    },
+    "Code — Générer requêtes GNews": {
+      "main": [[{"node": "Split — Une requête GNews par item", "type": "main", "index": 0}]]
+    },
+    "Split — Une requête GNews par item": {
+      "main": [
+        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
+        [{"node": "HTTP — GNews API", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP — GNews API": {
+      "main": [[{"node": "Code — Normaliser GNews", "type": "main", "index": 0}]]
+    },
+    "Code — Normaliser GNews": {
+      "main": [[{"node": "Split — Une requête GNews par item", "type": "main", "index": 0}]]
+    },
+    "Code — Générer requêtes NewsAPI": {
+      "main": [[{"node": "Split — Une requête NewsAPI par item", "type": "main", "index": 0}]]
+    },
+    "Split — Une requête NewsAPI par item": {
+      "main": [
+        [{"node": "Code — Dédoublonner", "type": "main", "index": 0}],
+        [{"node": "HTTP — NewsAPI", "type": "main", "index": 0}]
+      ]
+    },
+    "HTTP — NewsAPI": {
+      "main": [[{"node": "Code — Normaliser NewsAPI", "type": "main", "index": 0}]]
+    },
+    "Code — Normaliser NewsAPI": {
+      "main": [[{"node": "Split — Une requête NewsAPI par item", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5f904aa7-f4cd-4a4d-9248-1df802752edc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4f6e096e4f388cc53079b9f28db5969c578c760fd94221fe1b8fbaa6e035a5"
+  },
+  "id": "tcdfZjz6lKNkLrW4",
+  "tags": []
+}
